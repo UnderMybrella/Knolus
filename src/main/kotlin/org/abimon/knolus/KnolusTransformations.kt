@@ -1,5 +1,7 @@
 package org.abimon.knolus
 
+import kotlin.math.roundToInt
+
 @ExperimentalUnsignedTypes
 typealias KnolusTransform<T> = suspend VariableValue.(context: KnolusContext) -> T
 sealed class ParameterSpec<T> {
@@ -29,7 +31,34 @@ object KnolusTransformations {
     val TO_INT: KnolusTransform<Int> = { asNumber(it).toInt() }
     val TO_DOUBLE: KnolusTransform<Double> = { asNumber(it).toDouble() }
 
-    val TO_CHAR_OR_NULL: KnolusTransform<Char?> = {  context ->
+    val TO_CHAR_ARRAY: KnolusTransform<CharArray> = { context ->
+        when (val flat = fullyFlattened(context)) {
+            is VariableValue.StringType -> flat.string.toCharArray()
+            is VariableValue.ArrayType<*> -> {
+                when {
+                    flat.array.isArrayOf<VariableValue.CharType>() -> {
+                        val array = (flat.array as Array<VariableValue.CharType>)
+                        CharArray(array.size) { array[it].char }
+                    }
+                    flat.array.isArrayOf<VariableValue.IntegerType>() -> {
+                        val array = (flat.array as Array<VariableValue.IntegerType>)
+                        CharArray(array.size) { array[it].integer.toChar() }
+                    }
+                    flat.array.isArrayOf<VariableValue.DecimalType>() -> {
+                        val array = (flat.array as Array<VariableValue.DecimalType>)
+                        CharArray(array.size) { array[it].decimal.roundToInt().toChar() }
+                    }
+                    flat.array.isArrayOf<VariableValue.StringType>() -> (flat.array as Array<VariableValue.StringType>).flatMap { str -> str.string.toList() }.toCharArray()
+                    else -> CharArray(flat.array.size) { flat.array[it].asNumber(context).toChar() }
+                }
+            }
+            is VariableValue.CharType -> charArrayOf(flat.char)
+            is VariableValue.NullType -> charArrayOf()
+            is VariableValue.UndefinedType -> charArrayOf()
+            else -> charArrayOf(flat.asNumber(context).toChar())
+        }
+    }
+    val TO_CHAR_OR_NULL: KnolusTransform<Char?> = { context ->
         when (val flat = fullyFlattened(context)) {
             is VariableValue.StringType -> flat.string.firstOrNull()
             is VariableValue.CharType -> flat.char
@@ -129,6 +158,7 @@ fun variableReferenceTypeParameter(): TypeParameterSpec<VariableValue.VariableRe
 
 fun stringParameter(name: String): LeafParameterSpec<String> = LeafParameterSpec(name, KnolusTransformations.TO_STRING)
 fun charParameter(name: String): LeafParameterSpec<Char> = LeafParameterSpec(name, KnolusTransformations.TO_CHAR)
+fun charArrayParameter(name: String): LeafParameterSpec<CharArray> = LeafParameterSpec(name, KnolusTransformations.TO_CHAR_ARRAY)
 fun charOrNullParameter(name: String): LeafParameterSpec<Char?> = LeafParameterSpec(name, KnolusTransformations.TO_CHAR_OR_NULL)
 fun booleanParameter(name: String): LeafParameterSpec<Boolean> = LeafParameterSpec(name, KnolusTransformations.TO_BOOLEAN)
 fun numericalParameter(name: String): LeafParameterSpec<Number> = LeafParameterSpec(name, KnolusTransformations.TO_NUMBER)

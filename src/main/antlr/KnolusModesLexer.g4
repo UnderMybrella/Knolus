@@ -47,6 +47,7 @@ FUNC_CALL_BEGIN_QUOTED_STRING: '"' -> type(BEGIN_QUOTED_STRING), pushMode(Quoted
 FUNC_CALL_TRUE: TRUE -> type(TRUE);
 FUNC_CALL_FALSE: FALSE -> type(FALSE);
 FUNC_CALL_START_EXPRESSION: '(' -> type(BEGIN_EXPRESSION), pushMode(ExpressionMode);
+FUNC_CALL_START_ARRAY: '[' -> type(BEGIN_ARRAY), pushMode(ArrayMode);
 
 FUNC_CALL_SEPARATOR: ',';
 
@@ -64,6 +65,8 @@ mode ExpressionMode;
 EXPRESSION_SKIP_WS: INLINE_WHITESPACE_CHARACTERS+ -> skip;
 
 RECURSIVE_EXPRESSION: '(' -> type(BEGIN_EXPRESSION), pushMode(ExpressionMode);
+EXPR_START_ARRAY: '[' -> type(BEGIN_ARRAY), pushMode(ArrayMode);
+
 END_EXPRESSION: ')' -> popMode;
 
 EXPR_EXPONENTIAL: '**';

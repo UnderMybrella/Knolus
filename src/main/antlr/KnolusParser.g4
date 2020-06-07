@@ -35,6 +35,7 @@ array: BEGIN_ARRAY arrayContents END_ARRAY;
 
 arrayContents
     : ((quotedString | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (quotedString | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
+    | ((quotedCharacter | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (quotedCharacter | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
     | ((wholeNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (wholeNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
     | ((decimalNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (decimalNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
     | ((bool | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (bool | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
@@ -51,7 +52,7 @@ quotedString
 quotedCharacter
     : BEGIN_QUOTED_CHARACTER
         (CHARACTER_ESCAPES | QUOTED_CHARACTERS | QUOTED_CHARACTER_LINE_BREAK)
-      END_QUOTED_STRING
+      END_QUOTED_CHARACTER
     ;
 
 quotedStringVariableReference: QUOTED_STRING_VARIABLE_REFERENCE variableReference;

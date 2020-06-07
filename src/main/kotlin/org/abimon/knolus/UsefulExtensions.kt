@@ -88,7 +88,7 @@ public suspend inline fun VariableValue.fullyFlattened(context: KnolusContext): 
     do {
         lastResult = flattened
         flattened = lastResult.flatten(context)
-    } while (flattened !== lastResult)
+    } while (flattened != lastResult)
 
     return flattened
 }

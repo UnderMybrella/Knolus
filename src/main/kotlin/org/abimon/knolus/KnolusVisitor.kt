@@ -6,6 +6,8 @@ import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.antlr.knolus.KnolusParserBaseVisitor
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ConsoleErrorListener
+import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
 
@@ -237,11 +239,22 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
 fun parseKnolusScope(text: String): KnolusResult<KnolusUnion.ScopeType> {
-    val charStream = CharStreams.fromString(text)
-    val lexer = KnolusLexer(charStream)
-    val tokens = CommonTokenStream(lexer)
-    val parser = KnolusParser(tokens)
-    val visitor = KnolusVisitor(parser)
-    val union = visitor.visitScope(parser.scope())
-    return union
+    try {
+        val charStream = CharStreams.fromString(text)
+        val lexer = KnolusLexer(charStream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(ThrowingErrorListener)
+
+        val tokens = CommonTokenStream(lexer)
+        val parser = KnolusParser(tokens)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ThrowingErrorListener)
+
+        val visitor = KnolusVisitor(parser)
+        val union = visitor.visitScope(parser.scope())
+            .filter { scope -> scope.lines.isNotEmpty() }
+        return union
+    } catch (pce: ParseCancellationException) {
+        return KnolusResult.Thrown(pce)
+    }
 }
