@@ -81,3 +81,14 @@ public suspend inline fun <T : Any, reified R : Any> Array<T>.coerceArrayBetween
     @Suppress("UNCHECKED_CAST")
     return block(this as? Array<R> ?: return null) as Array<T>
 }
+
+public suspend inline fun VariableValue.fullyFlattened(context: KnolusContext): VariableValue {
+    var lastResult: VariableValue
+    var flattened: VariableValue = this
+    do {
+        lastResult = flattened
+        flattened = lastResult.flatten(context)
+    } while (flattened !== lastResult)
+
+    return flattened
+}

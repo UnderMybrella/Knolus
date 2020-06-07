@@ -19,14 +19,32 @@ object KnolusTransformations {
     val TO_BOOLEAN: KnolusTransform<Boolean> = VariableValue::asBoolean
     val TO_NUMBER: KnolusTransform<Number> = VariableValue::asNumber
 
+    val TO_CHAR: KnolusTransform<Char> = {  context ->
+        when (val flat = fullyFlattened(context)) {
+            is VariableValue.StringType -> flat.string.firstOrNull() ?: '\u0000'
+            is VariableValue.CharType -> flat.char
+            else -> flat.asNumber(context).toChar()
+        }
+    }
     val TO_INT: KnolusTransform<Int> = { asNumber(it).toInt() }
     val TO_DOUBLE: KnolusTransform<Double> = { asNumber(it).toDouble() }
+
+    val TO_CHAR_OR_NULL: KnolusTransform<Char?> = {  context ->
+        when (val flat = fullyFlattened(context)) {
+            is VariableValue.StringType -> flat.string.firstOrNull()
+            is VariableValue.CharType -> flat.char
+            is VariableValue.NullType -> null
+            is VariableValue.UndefinedType -> null
+            else -> flat.asNumber(context).toChar()
+        }
+    }
 
     val FLATTENED_TO_INNER: KnolusTransform<Any> = { context ->
         when (val flat = this.flatten(context)) {
             is VariableValue.StringComponents -> flat.components
             is VariableValue.StringType -> flat.string
             is VariableValue.BooleanType -> flat.boolean
+            is VariableValue.CharType -> flat.char
             is VariableValue.IntegerType -> flat.integer
             is VariableValue.DecimalType -> flat.decimal
             is VariableValue.VariableReferenceType -> flat.variableName
@@ -44,6 +62,7 @@ object KnolusTransformations {
             is VariableValue.StringComponents -> flat.components
             is VariableValue.StringType -> flat.string
             is VariableValue.BooleanType -> flat.boolean
+            is VariableValue.CharType -> flat.char
             is VariableValue.IntegerType -> flat.integer
             is VariableValue.DecimalType -> flat.decimal
             is VariableValue.VariableReferenceType -> flat.variableName
@@ -87,20 +106,30 @@ fun numberTypeParameter(): TypeParameterSpec<Number> = TypeParameterSpec("Number
 fun numberTypeAsIntParameter(): TypeParameterSpec<Int> = TypeParameterSpec("Number", KnolusTransformations.TO_INT)
 fun numberTypeAsDoubleParameter(): TypeParameterSpec<Double> = TypeParameterSpec("Number", KnolusTransformations.TO_DOUBLE)
 fun numberTypeAsBooleanParameter(): TypeParameterSpec<Boolean> = TypeParameterSpec("Number", KnolusTransformations.TO_BOOLEAN)
+fun numberTypeAsCharParameter(): TypeParameterSpec<Char> = TypeParameterSpec("Number", KnolusTransformations.TO_CHAR)
 
 fun intTypeParameter(): TypeParameterSpec<Int> = TypeParameterSpec("Integer", KnolusTransformations.TO_INT)
 fun intTypeAsDoubleParameter(): TypeParameterSpec<Double> = TypeParameterSpec("Integer", KnolusTransformations.TO_DOUBLE)
 fun intTypeAsBooleanParameter(): TypeParameterSpec<Boolean> = TypeParameterSpec("Integer", KnolusTransformations.TO_BOOLEAN)
+fun intTypeAsCharParameter(): TypeParameterSpec<Char> = TypeParameterSpec("Integer", KnolusTransformations.TO_CHAR)
 
 fun doubleTypeParameter(): TypeParameterSpec<Double> = TypeParameterSpec("Decimal", KnolusTransformations.TO_DOUBLE)
 fun doubleTypeAsIntParameter(): TypeParameterSpec<Int> = TypeParameterSpec("Decimal", KnolusTransformations.TO_INT)
 fun doubleTypeAsBooleanParameter(): TypeParameterSpec<Boolean> = TypeParameterSpec("Decimal", KnolusTransformations.TO_BOOLEAN)
+fun doubleTypeAsCharParameter(): TypeParameterSpec<Char> = TypeParameterSpec("Decimal", KnolusTransformations.TO_CHAR)
+
+fun charTypeParameter(): TypeParameterSpec<Char> = TypeParameterSpec("Char", KnolusTransformations.TO_CHAR)
+fun charTypeAsIntParameter(): TypeParameterSpec<Int> = TypeParameterSpec("Char", KnolusTransformations.TO_INT)
+fun charTypeAsDoubleParameter(): TypeParameterSpec<Double> = TypeParameterSpec("Char", KnolusTransformations.TO_DOUBLE)
+fun charTypeAsBooleanParameter(): TypeParameterSpec<Boolean> = TypeParameterSpec("Char", KnolusTransformations.TO_BOOLEAN)
 
 fun variableReferenceTypeParameter(): TypeParameterSpec<VariableValue.VariableReferenceType> = TypeParameterSpec("VariableReference", KnolusTransformations.VARIABLE_REFERENCE_CAST)
 
 
 
 fun stringParameter(name: String): LeafParameterSpec<String> = LeafParameterSpec(name, KnolusTransformations.TO_STRING)
+fun charParameter(name: String): LeafParameterSpec<Char> = LeafParameterSpec(name, KnolusTransformations.TO_CHAR)
+fun charOrNullParameter(name: String): LeafParameterSpec<Char?> = LeafParameterSpec(name, KnolusTransformations.TO_CHAR_OR_NULL)
 fun booleanParameter(name: String): LeafParameterSpec<Boolean> = LeafParameterSpec(name, KnolusTransformations.TO_BOOLEAN)
 fun numericalParameter(name: String): LeafParameterSpec<Number> = LeafParameterSpec(name, KnolusTransformations.TO_NUMBER)
 fun intParameter(name: String): LeafParameterSpec<Int> = LeafParameterSpec(name, KnolusTransformations.TO_INT)

@@ -16,6 +16,7 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
         const val NO_VALID_VARIABLE_VALUE = 0x1200
         const val NO_VALID_NUMBER_TYPE = 0x1201
         const val NO_VALID_EXPRESSION_OPERATION = 0x1202
+        const val NO_VALID_CHAR_VALUE = 0x1203
 
         const val NUMBER_FORMAT_ERROR = 0x1300
     }
@@ -44,6 +45,7 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
         if (ctx == null) return KnolusResult.Empty()
         if (ctx.NULL() != null) return KnolusResult.unionVariable(VariableValue.NullType)
 
+        ctx.quotedCharacter()?.let { return visitQuotedCharacter(it) }
         ctx.quotedString()?.let { return visitQuotedString(it) }
         ctx.number()?.let { return visitNumber(it) }
         ctx.variableReference()?.let { return visitVariableReference(it) }
@@ -77,7 +79,7 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
                         KnolusParser.ESCAPES -> {
                             when (val c = node.text[1]) {
                                 'b' -> builder.append('\b')
-                                'f' -> builder.append(0x0C.toChar())
+                                'f' -> builder.append('\u000C')
                                 'n' -> builder.append('\n')
                                 'r' -> builder.append('\r')
                                 't' -> builder.append('\t')
@@ -88,7 +90,7 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
 
                         KnolusParser.STRING_CHARACTERS -> builder.append(node.text)
                         KnolusParser.STRING_WHITESPACE -> builder.append(node.text)
-                        KnolusParser.QUOTED_STRING_LINE_BREAK -> builder.append("\n")
+                        KnolusParser.QUOTED_STRING_LINE_BREAK -> builder.append('\n')
                     }
                 }
                 is KnolusParser.QuotedStringVariableReferenceContext -> {
@@ -106,6 +108,26 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
         if (builder.isNotEmpty()) components.add(KnolusUnion.StringComponent.RawText(builder.toString()))
 
         return KnolusResult.unionVariable(VariableValue.StringComponents(components.toTypedArray()))
+    }
+
+    override fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KnolusResult<VariableValue.CharType> {
+        ctx.CHARACTER_ESCAPES()?.let { node ->
+            return KnolusResult.unionCharVariable(when (val c = node.text[1]) {
+                'b' -> '\b'
+                'f' -> '\u000C'
+                'n' -> '\n'
+                'r' -> '\r'
+                't' -> '\t'
+                'u' -> node.text.substring(2).toInt(16).toChar()
+                else -> c
+            })
+        }
+
+        ctx.QUOTED_CHARACTERS()?.let { node -> return KnolusResult.unionCharVariable(node.text[0]) }
+        ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KnolusResult.unionCharVariable('\n') }
+
+        return KnolusResult.Error(NO_VALID_CHAR_VALUE,
+            "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
     override fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KnolusResult<VariableValue.VariableReferenceType> =

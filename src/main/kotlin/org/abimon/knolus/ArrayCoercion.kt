@@ -14,6 +14,7 @@ object ArrayCoercion {
         array.coerceArrayWith(context, value, this::addByCoercionStringComponents)
             ?: array.coerceArrayWith(context, value, this::addByCoercionStringType)
             ?: array.coerceArrayWith(context, value, this::addByCoercionBooleanType)
+            ?: array.coerceArrayWith(context, value, this::addByCoercionCharType)
             ?: array.coerceArrayWith(context, value, this::addByCoercionIntegerType)
             ?: array.coerceArrayWith(context, value, this::addByCoercionDecimalType)
             ?: array.coerceArrayWith(context, value, this::addByCoercionVariableReferenceType)
@@ -115,6 +116,30 @@ object ArrayCoercion {
             is VariableValue.ExpressionType ->
                 addByCoercionBooleanType(context, array, value.flatten(context))
             else -> array.plus(VariableValue.BooleanType(value.asBoolean(context)))
+        }
+
+    suspend fun addByCoercionCharType(
+        context: KnolusContext,
+        array: Array<VariableValue.CharType>,
+        value: VariableValue,
+    ): Array<VariableValue.CharType> =
+        when (value) {
+            is VariableValue.CharType -> array.plus(value)
+            is VariableValue.ArrayType<*> -> {
+                if (value.array.isArrayOf<VariableValue.CharType>()) array.plus(value.array as Array<out VariableValue.CharType>)
+                else array.plus(value.array.mapToArray { VariableValue.CharType(it.asNumber(context).toChar()) })
+            }
+            is VariableValue.VariableReferenceType ->
+                addByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.MemberVariableReferenceType ->
+                addByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.FunctionCallType ->
+                addByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.MemberFunctionCallType ->
+                addByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.ExpressionType ->
+                addByCoercionCharType(context, array, value.flatten(context))
+            else -> array.plus(VariableValue.CharType(value.asNumber(context).toChar()))
         }
 
     suspend fun addByCoercionIntegerType(
@@ -382,6 +407,7 @@ object ArrayCoercion {
         array.coerceArrayWith(context, value, this::dropByCoercionStringComponents)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionStringType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionBooleanType)
+            ?: array.coerceArrayWith(context, value, this::dropByCoercionCharType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionIntegerType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionDecimalType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionVariableReferenceType)
@@ -392,7 +418,7 @@ object ArrayCoercion {
             ?: array.coerceArrayWith(context, value, this::dropByCoercionExpressionType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionNullType)
             ?: array.coerceArrayWith(context, value, this::dropByCoercionUndefinedType)
-            ?: (array as Array<VariableValue>).filter { subvalue -> subvalue != value }.toTypedArray<VariableValue>() as Array<T>
+            ?: (array as Array<VariableValue>).filter { subvalue -> subvalue != value }.toTypedArray() as Array<T>
 
     suspend fun dropByCoercionStringComponents(
         context: KnolusContext,
@@ -463,6 +489,30 @@ object ArrayCoercion {
                 dropByCoercionBooleanType(context, array, value.flatten(context))
             is VariableValue.ExpressionType ->
                 dropByCoercionBooleanType(context, array, value.flatten(context))
+            else -> array.sliceArray(value.asNumber(context).toInt() until array.size)
+        }
+
+    suspend fun dropByCoercionCharType(
+        context: KnolusContext,
+        array: Array<VariableValue.CharType>,
+        value: VariableValue,
+    ): Array<VariableValue.CharType> =
+        when (value) {
+            is VariableValue.CharType -> if (value in array) array.filter { subvalue -> subvalue != value }.toTypedArray() else array
+            is VariableValue.ArrayType<*> -> {
+                if (value.array.isArrayOf<VariableValue.CharType>()) array.filter { subvalue -> subvalue !in value.array }.toTypedArray()
+                else array.sliceArray(value.array.size until array.size)
+            }
+            is VariableValue.VariableReferenceType ->
+                dropByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.MemberVariableReferenceType ->
+                dropByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.FunctionCallType ->
+                dropByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.MemberFunctionCallType ->
+                dropByCoercionCharType(context, array, value.flatten(context))
+            is VariableValue.ExpressionType ->
+                dropByCoercionCharType(context, array, value.flatten(context))
             else -> array.sliceArray(value.asNumber(context).toInt() until array.size)
         }
 

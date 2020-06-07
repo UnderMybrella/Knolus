@@ -153,6 +153,13 @@ sealed class VariableValue(vararg val typeNames: String) : KnolusUnion() {
         override suspend fun asBoolean(context: KnolusContext): Boolean = decimal.toInt() != 0
     }
 
+    data class CharType(val char: Char): VariableValue("Char", "Number", "Object") {
+        override suspend fun asString(context: KnolusContext): String = char.toString()
+        override suspend fun asNumber(context: KnolusContext): Number = char.toInt()
+        override suspend fun asBoolean(context: KnolusContext): Boolean = char != '\u0000'
+        override suspend fun flatten(context: KnolusContext): VariableValue = this
+    }
+
     data class VariableReferenceType(val variableName: String) :
         VariableValue("VariableReference", "Reference", "Object") {
         override suspend fun flatten(context: KnolusContext): VariableValue =
@@ -414,9 +421,22 @@ sealed class ExpressionOperation : KnolusUnion() {
             first: VariableValue,
             second: VariableValue,
         ): VariableValue = when (first) {
-            is VariableValue.StringType -> VariableValue.StringType(
-                first.asString(context).plus(second.asString(context))
-            )
+            is VariableValue.StringType -> VariableValue.StringType(first.string.plus(second.asString(context)))
+            is VariableValue.CharType -> when (second) {
+                VariableValue.NullType -> first
+                VariableValue.UndefinedType -> VariableValue.UndefinedType
+
+                is VariableValue.StringComponents -> operate(context, first, second.flatten(context))
+                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
+
+                is VariableValue.StringType -> VariableValue.StringType("${first.char}${second.string}")
+
+                else -> VariableValue.CharType((first.char.toInt() + second.asNumber(context).toInt()).toChar())
+            }
             is VariableValue.BooleanType -> VariableValue.BooleanType(
                 first.boolean.xor(
                     second.asNumber(context).toInt() != 0
@@ -449,26 +469,10 @@ sealed class ExpressionOperation : KnolusUnion() {
             second: VariableValue,
         ): VariableValue = when (first) {
             is VariableValue.StringType -> when (second) {
-                is VariableValue.StringComponents -> VariableValue.StringType(
-                    first.string.removeSuffix(second.asString(context))
-                )
-                is VariableValue.StringType -> VariableValue.StringType(
-                    first.string.removeSuffix(second.string)
-                )
-                is VariableValue.BooleanType -> VariableValue.StringType(
-                    first.string.removeSuffix(second.boolean.toString())
-                )
-                is VariableValue.IntegerType -> VariableValue.StringType(
-                    first.string.dropLast(second.integer)
-                )
-                is VariableValue.DecimalType -> VariableValue.StringType(
-                    first.string.dropLast(second.decimal.toInt())
-                )
+                is VariableValue.StringType -> VariableValue.StringType(first.string.removeSuffix(second.string))
+                is VariableValue.CharType -> VariableValue.StringType(first.string.trimEnd(second.char))
 
-                is VariableValue.ArrayType<*> -> VariableValue.StringType(
-                    first.string.removeSuffix(second.asString(context))
-                )
-
+                is VariableValue.StringComponents -> operate(context, first, second.flatten(context))
                 is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
@@ -476,7 +480,22 @@ sealed class ExpressionOperation : KnolusUnion() {
                 is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
 
                 is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
+                else -> VariableValue.UndefinedType
+            }
+            is VariableValue.CharType -> when (second) {
+                VariableValue.NullType -> first
+                VariableValue.UndefinedType -> VariableValue.UndefinedType
+
+                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
+
+                is VariableValue.IntegerType -> VariableValue.CharType((first.char.toInt() - second.integer).toChar())
+                is VariableValue.DecimalType -> VariableValue.CharType((first.char.toInt() - second.decimal.toInt()).toChar())
+
+                else -> VariableValue.UndefinedType
             }
             is VariableValue.BooleanType -> VariableValue.BooleanType(
                 first.boolean.xor(
@@ -510,32 +529,8 @@ sealed class ExpressionOperation : KnolusUnion() {
             second: VariableValue,
         ): VariableValue = when (first) {
             is VariableValue.StringType -> when (second) {
-                is VariableValue.StringComponents -> VariableValue.StringType(
-                    first.string.take(
-                        first.string.length / second.asNumber(
-                            context
-                        ).toInt().coerceAtLeast(1)
-                    )
-                )
-                is VariableValue.StringType -> VariableValue.StringType(
-                    first.string.take(
-                        first.string.length / second.asNumber(
-                            context
-                        ).toInt().coerceAtLeast(1)
-                    )
-                )
-                is VariableValue.BooleanType -> VariableValue.StringType(
-                    first.string.takeIf(second.boolean) ?: ""
-                )
-                is VariableValue.IntegerType -> VariableValue.StringType(
-                    first.string.take(first.string.length / second.integer)
-                )
-                is VariableValue.DecimalType -> VariableValue.StringType(
-                    first.string.take(if (second.decimal < 1.0) (first.string.length * second.decimal).toInt() else first.string.length / second.decimal.toInt())
-                )
-                is VariableValue.ArrayType<*> -> VariableValue.StringType(
-                    first.string.take(first.string.length / second.array.size) // /shrug
-                )
+                VariableValue.BooleanType.TRUE -> first
+                VariableValue.BooleanType.FALSE -> VariableValue.NullType
 
                 is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
@@ -544,7 +539,24 @@ sealed class ExpressionOperation : KnolusUnion() {
                 is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
 
                 is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
+
+                else -> VariableValue.UndefinedType
+            }
+            is VariableValue.CharType -> when (second) {
+                VariableValue.BooleanType.TRUE -> first
+                VariableValue.BooleanType.FALSE -> VariableValue.NullType
+                VariableValue.NullType -> first
+
+                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
+                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
+                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
+
+                is VariableValue.IntegerType -> VariableValue.CharType((first.char.toInt() / second.integer).toChar())
+                is VariableValue.DecimalType -> VariableValue.CharType((first.char.toDouble() / second.decimal).roundToInt().toChar())
+
+                else -> VariableValue.UndefinedType
             }
             is VariableValue.BooleanType -> VariableValue.BooleanType(
                 first.boolean.and(
@@ -557,21 +569,7 @@ sealed class ExpressionOperation : KnolusUnion() {
             is VariableValue.DecimalType -> VariableValue.DecimalType(
                 first.decimal / second.asNumber(context).toDouble()
             )
-            is VariableValue.ArrayType<*> -> when (second) {
-                is VariableValue.DecimalType -> first.copyByTaking((first.array.size * second.decimal.asReasonablePercentage()).roundToInt())
-                is VariableValue.BooleanType -> if (second.boolean) first else VariableValue.NullType
-
-                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
-
-                is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
-
-                else -> first.copyByTaking(second.asNumber(context).toInt())
-            }
+            is VariableValue.ArrayType<*> -> VariableValue.UndefinedType
 
             is VariableValue.StringComponents -> operate(context, first.flatten(context), second)
             is VariableValue.VariableReferenceType -> operate(context, first.flatten(context), second)
@@ -592,11 +590,6 @@ sealed class ExpressionOperation : KnolusUnion() {
             second: VariableValue,
         ): VariableValue = when (first) {
             is VariableValue.StringType -> when (second) {
-                is VariableValue.StringType -> buildStringVariable {
-                    repeat(second.asNumber(context).toInt()) {
-                        append(first.string)
-                    }
-                }
                 is VariableValue.BooleanType -> if (second.boolean) first else VariableValue.NullType
                 is VariableValue.IntegerType -> buildStringVariable {
                     repeat(second.integer) {
@@ -608,13 +601,12 @@ sealed class ExpressionOperation : KnolusUnion() {
                         append(first.string)
                     }
                 }
-                is VariableValue.ArrayType<*> -> buildStringVariable {
-                    repeat(second.array.size) {
+                is VariableValue.CharType -> buildStringVariable {
+                    repeat(second.char.toInt()) {
                         append(first.string)
                     }
                 }
 
-                is VariableValue.StringComponents -> operate(context, first, second.flatten(context))
                 is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
@@ -622,8 +614,10 @@ sealed class ExpressionOperation : KnolusUnion() {
                 is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
 
                 is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
+
+                else -> VariableValue.UndefinedType
             }
+            is VariableValue.CharType -> VariableValue.CharType((first.char.toInt() * second.asNumber(context).toDouble()).roundToInt().toChar())
             is VariableValue.BooleanType -> VariableValue.BooleanType(
                 first.boolean and second.asBoolean(context)
             )
@@ -633,22 +627,7 @@ sealed class ExpressionOperation : KnolusUnion() {
             is VariableValue.DecimalType -> VariableValue.DecimalType(
                 first.decimal * second.asNumber(context).toDouble()
             )
-            is VariableValue.ArrayType<*> -> when (second) {
-                is VariableValue.DecimalType -> first.copyByStriping((first.array.size * second.decimal).roundToInt())
-
-                is VariableValue.BooleanType -> if (second.boolean) first else VariableValue.NullType
-
-                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
-
-                is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
-
-                else -> first.copyByStriping(first.array.size * second.asNumber(context).toInt())
-            }
+            is VariableValue.ArrayType<*> -> VariableValue.UndefinedType
 
             is VariableValue.StringComponents -> operate(context, first.flatten(context), second)
             is VariableValue.VariableReferenceType -> operate(context, first.flatten(context), second)
@@ -669,11 +648,11 @@ sealed class ExpressionOperation : KnolusUnion() {
             second: VariableValue,
         ): VariableValue = when (first) {
             is VariableValue.StringType -> when (second) {
-                is VariableValue.StringType -> buildStringVariable {
-                    append(first.string)
-                    repeat(second.asNumber(context).toInt() - 1) { append(this.toString()) }
-                }
                 is VariableValue.BooleanType -> if (second.boolean) first else VariableValue.NullType
+                is VariableValue.CharType -> buildStringVariable {
+                    append(first.string)
+                    repeat(second.char.toInt() - 1) { append(this.toString()) }
+                }
                 is VariableValue.IntegerType -> buildStringVariable {
                     append(first.string)
                     repeat(second.integer - 1) { append(this.toString()) }
@@ -682,12 +661,7 @@ sealed class ExpressionOperation : KnolusUnion() {
                     append(first.string)
                     repeat(second.decimal.toInt() - 1) { append(this.toString()) }
                 }
-                is VariableValue.ArrayType<*> -> buildStringVariable {
-                    append(first.string)
-                    repeat(second.array.size - 1) { append(this.toString()) }
-                }
 
-                is VariableValue.StringComponents -> operate(context, first, second.flatten(context))
                 is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
                 is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
@@ -695,8 +669,10 @@ sealed class ExpressionOperation : KnolusUnion() {
                 is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
 
                 is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
+
+                else -> VariableValue.UndefinedType
             }
+            is VariableValue.CharType -> VariableValue.CharType(first.char.toDouble().pow(second.asNumber(context).toDouble()).roundToInt().toChar())
             is VariableValue.BooleanType ->
                 if (second.asNumber(context).toInt().and(0b1) == 0) first
                 else VariableValue.BooleanType(!first.boolean)
@@ -708,22 +684,7 @@ sealed class ExpressionOperation : KnolusUnion() {
                 first.decimal.pow(second.asNumber(context).toDouble())
             )
 
-            is VariableValue.ArrayType<*> -> when (second) {
-                is VariableValue.DecimalType -> first.copyByGrouping(second.decimal.roundToInt())
-
-                is VariableValue.BooleanType -> if (second.boolean) first else VariableValue.NullType
-
-                is VariableValue.VariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberVariableReferenceType -> operate(context, first, second.flatten(context))
-                is VariableValue.FunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.MemberFunctionCallType -> operate(context, first, second.flatten(context))
-                is VariableValue.ExpressionType -> operate(context, first, second.flatten(context))
-
-                is VariableValue.NullType -> first
-                is VariableValue.UndefinedType -> first
-
-                else -> first.copyByGrouping(second.asNumber(context).toInt())
-            }
+            is VariableValue.ArrayType<*> -> VariableValue.UndefinedType
 
             is VariableValue.StringComponents -> operate(context, first.flatten(context), second)
             is VariableValue.VariableReferenceType -> operate(context, first.flatten(context), second)

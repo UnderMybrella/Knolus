@@ -5,6 +5,8 @@ interface KnolusResult<T> {
     companion object {
         @ExperimentalUnsignedTypes
         fun <T: VariableValue> unionVariable(value: T): KnolusResult<T> = UnionVariableSuccess(value) as KnolusResult<T>
+        @ExperimentalUnsignedTypes
+        fun unionCharVariable(value: Char): KnolusResult<VariableValue.CharType> = UnionVariableSuccess(VariableValue.CharType(value)) as KnolusResult<VariableValue.CharType>
 
         /** Expression Operations */
         @ExperimentalUnsignedTypes

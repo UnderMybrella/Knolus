@@ -20,6 +20,7 @@ memberVariableReference: (memberName=BEGIN_MEMBER_REFERENCE) variableReference;
 variableValue
     : array
     | quotedString
+    | quotedCharacter
     | number
     | memberFunctionCall
     | functionCall
@@ -44,6 +45,12 @@ bool: TRUE | FALSE;
 quotedString
     : BEGIN_QUOTED_STRING
         (quotedStringVariableReference | ESCAPES | STRING_CHARACTERS | QUOTED_STRING_LINE_BREAK | STRING_WHITESPACE)*
+      END_QUOTED_STRING
+    ;
+
+quotedCharacter
+    : BEGIN_QUOTED_CHARACTER
+        (CHARACTER_ESCAPES | QUOTED_CHARACTERS | QUOTED_CHARACTER_LINE_BREAK)
       END_QUOTED_STRING
     ;
 
