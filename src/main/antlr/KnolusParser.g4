@@ -18,17 +18,28 @@ variableReference: (variableName=IDENTIFIER);
 memberVariableReference: (memberName=BEGIN_MEMBER_REFERENCE) variableReference;
 
 variableValue
-    : quotedString
+    : array
+    | quotedString
     | number
     | memberFunctionCall
     | functionCall
     | expression
-    | TRUE
-    | FALSE
+    | bool
     | NULL
     | memberVariableReference
     | variableReference
     ;
+
+array: BEGIN_ARRAY arrayContents END_ARRAY;
+
+arrayContents
+    : ((quotedString | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (quotedString | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
+    | ((wholeNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (wholeNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
+    | ((decimalNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (decimalNumber | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
+    | ((bool | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference) (ARRAY_SEPARATOR (bool | memberFunctionCall | functionCall | expression | memberVariableReference | variableReference))*)
+    ;
+    
+bool: TRUE | FALSE;
 
 quotedString
     : BEGIN_QUOTED_STRING
