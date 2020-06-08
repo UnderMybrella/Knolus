@@ -11,6 +11,8 @@ interface KnolusTypedValue {
         fun getMemberPropertyGetterName(typeName: String, propertyName: String): String = "MemberProperty_${typeName}_${propertyName}"
         fun getMemberFunctionName(typeName: String, functionName: String): String = "MemberFunction_${typeName}_${functionName}"
         fun getMemberOperatorName(typeName: String, operator: ExpressionOperator): String = "MemberOperator_${typeName}_${operator.functionCallName}"
+
+        fun isInstance(value: KnolusTypedValue): Boolean
     }
 
     interface UnsureValue: KnolusTypedValue {

@@ -5,6 +5,7 @@ import org.abimon.knolus.KnolusContext
 inline class KnolusBoolean(val boolean: Boolean) : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Boolean", "Object")
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusBoolean
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean>

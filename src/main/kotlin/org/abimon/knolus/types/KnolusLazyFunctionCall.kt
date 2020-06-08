@@ -9,6 +9,8 @@ data class KnolusLazyFunctionCall(val name: String, val parameters: Array<Knolus
     KnolusTypedValue.RuntimeValue, KnolusUnion.Action {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLazyFunctionCall> {
         override val typeHierarchicalNames: Array<String> = arrayOf("FunctionCall", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyFunctionCall
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyFunctionCall>

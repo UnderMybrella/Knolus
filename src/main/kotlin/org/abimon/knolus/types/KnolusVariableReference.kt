@@ -9,6 +9,7 @@ import org.abimon.knolus.KnolusContext
 data class KnolusVariableReference(val variableName: String) : KnolusTypedValue.RuntimeValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusVariableReference> {
         override val typeHierarchicalNames: Array<String> = arrayOf("VariableReference", "Reference", "Object")
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusVariableReference
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusVariableReference>

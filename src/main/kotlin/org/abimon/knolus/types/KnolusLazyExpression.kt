@@ -2,13 +2,16 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.ExpressionOperator
 import org.abimon.knolus.KnolusContext
+import org.abimon.knolus.KnolusUnion
 
 data class KnolusLazyExpression(
     val startValue: KnolusTypedValue,
     val ops: Array<Pair<ExpressionOperator, KnolusTypedValue>>,
 ) : KnolusTypedValue.RuntimeValue {
-    companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusLazyExpression> {
+    companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLazyExpression> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Expression", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyExpression
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyExpression>
@@ -24,9 +27,21 @@ data class KnolusLazyExpression(
         evaluate(context).asBoolean(context)
 
     override suspend fun evaluate(context: KnolusContext): KnolusTypedValue {
-        var value: KnolusTypedValue = this.startValue
+        var value: KnolusTypedValue =
+            if (this.startValue is KnolusTypedValue.UnsureValue && this.startValue.needsEvaluation(context))
+                this.startValue.evaluate(context)
+            else
+                this.startValue
+
         val remainingOps: MutableList<Pair<ExpressionOperator, KnolusTypedValue>> = ArrayList(this.ops.size)
-        remainingOps.addAll(this.ops)
+        remainingOps.addAll(this.ops.map { op ->
+            if (op.second is KnolusTypedValue.UnsureValue && (op.second as KnolusTypedValue.UnsureValue).needsEvaluation(
+                    context)
+            )
+                Pair(op.first, (op.second as KnolusTypedValue.UnsureValue).evaluate(context))
+            else
+                op
+        })
 
         suspend fun handleOperations(vararg operators: ExpressionOperator) {
             val ops = remainingOps.toTypedArray()
@@ -50,7 +65,8 @@ data class KnolusLazyExpression(
 
                     val result = context.invokeOperator(pair.first, first, second) ?: KnolusConstants.Undefined
                     if (op == null) value = result
-                    else if (remainingOps.isEmpty()) value = context.invokeOperator(op, value, result) ?: KnolusConstants.Undefined
+                    else if (remainingOps.isEmpty()) value =
+                        context.invokeOperator(op, value, result) ?: KnolusConstants.Undefined
                     else remainingOps.add(Pair(op, result))
                 }
             }

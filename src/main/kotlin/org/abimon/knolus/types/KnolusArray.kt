@@ -24,6 +24,8 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
             is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else this
             else -> this
         }
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusArray<*>
     }
 
     private data class StableArray<T: KnolusTypedValue>(override val array: Array<T>): KnolusArray<T>(array) {

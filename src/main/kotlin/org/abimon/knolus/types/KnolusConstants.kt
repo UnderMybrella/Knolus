@@ -12,6 +12,8 @@ sealed class KnolusConstants {
         override suspend fun asNumber(context: KnolusContext): Number = 0
         override suspend fun asString(context: KnolusContext): String = "[null]"
         override suspend fun asBoolean(context: KnolusContext): Boolean = false
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value === Null
     }
 
     object Undefined : KnolusTypedValue, KnolusTypedValue.TypeInfo<Undefined> {
@@ -22,5 +24,7 @@ sealed class KnolusConstants {
         override suspend fun asNumber(context: KnolusContext): Number = 0
         override suspend fun asString(context: KnolusContext): String = "[undefined]"
         override suspend fun asBoolean(context: KnolusContext): Boolean = false
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value === Undefined
     }
 }

@@ -7,6 +7,8 @@ import org.abimon.knolus.toIntBaseN
 inline class KnolusString(val string: String) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusString> {
         override val typeHierarchicalNames: Array<String> = arrayOf("String", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusString
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>

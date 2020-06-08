@@ -12,6 +12,8 @@ data class KnolusLazyMemberFunctionCall(
 ) : KnolusTypedValue.RuntimeValue, KnolusUnion.Action {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall> {
         override val typeHierarchicalNames: Array<String> = arrayOf("FunctionCall", "Reference", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyMemberFunctionCall
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall>

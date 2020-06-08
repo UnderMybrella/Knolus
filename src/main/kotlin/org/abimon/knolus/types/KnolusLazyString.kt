@@ -5,6 +5,8 @@ import org.abimon.knolus.*
 data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>): KnolusTypedValue.RuntimeValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusLazyString> {
         override val typeHierarchicalNames: Array<String> = arrayOf("LazyString", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyString
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyString>

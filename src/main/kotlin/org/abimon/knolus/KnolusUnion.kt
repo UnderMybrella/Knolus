@@ -1,6 +1,7 @@
 package org.abimon.knolus
 
 import org.abimon.knolus.types.KnolusConstants
+import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
 
 @ExperimentalUnsignedTypes
@@ -20,7 +21,31 @@ sealed class KnolusUnion {
     }
 
     data class ScopeType(val lines: Array<KnolusUnion>) : KnolusUnion()
-    data class FunctionParameterType(val name: String?, val parameter: KnolusTypedValue) : KnolusUnion()
+    class FunctionParameterType private constructor(val name: String?, val parameter: KnolusTypedValue) : KnolusUnion() {
+        companion object {
+            operator fun invoke(name: String?, parameter: KnolusTypedValue) = FunctionParameterType(name?.sanitiseFunctionIdentifier(), parameter)
+        }
+
+        operator fun component1() = name
+        operator fun component2() = parameter
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as FunctionParameterType
+
+            if (name != other.name) return false
+            if (parameter != other.parameter) return false
+
+            return true
+        }
+        override fun hashCode(): Int {
+            var result = name?.hashCode() ?: 0
+            result = 31 * result + parameter.hashCode()
+            return result
+        }
+    }
 
     //    data class ScriptParameterType(val name: String?, val parameter: KnolusTypedValue) : KnolusUnion()
     data class ReturnStatement(val value: KnolusTypedValue) : KnolusUnion()
@@ -61,6 +86,7 @@ sealed class KnolusUnion {
         }
     }
 
+    //TODO: Implement proper typing
     data class FunctionDeclaration(
         val functionName: String,
         val parameterNames: Array<String>,
@@ -68,7 +94,7 @@ sealed class KnolusUnion {
         val body: ScopeType?,
     ) : KnolusUnion(), Action {
         fun asPipelineFunction(): KnolusFunction<KnolusTypedValue?> = KnolusFunction(
-            *Array(parameterNames.size) { Pair(parameterNames[it], null) },
+            Array(parameterNames.size) { KnolusDeclaredFunctionParameter.Concrete(parameterNames[it], KnolusObject, null) },
             func = this::invoke
         )
 

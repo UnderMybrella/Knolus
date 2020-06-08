@@ -5,6 +5,8 @@ import org.abimon.knolus.KnolusContext
 interface KnolusNumericalType : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusNumericalType> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Number", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusNumericalType
     }
 
     val number: Number
@@ -17,6 +19,8 @@ interface KnolusNumericalType : KnolusTypedValue {
 inline class KnolusInt(override val number: Int) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusInt> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Int", "Number", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusInt
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusInt>
@@ -26,6 +30,8 @@ inline class KnolusInt(override val number: Int) : KnolusNumericalType {
 inline class KnolusDouble(override val number: Double) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusDouble> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Double", "Number", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusDouble
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusDouble>
@@ -35,6 +41,8 @@ inline class KnolusDouble(override val number: Double) : KnolusNumericalType {
 inline class KnolusChar(val char: Char) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusChar> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Char", "Number", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusChar
     }
 
     override val number: Number

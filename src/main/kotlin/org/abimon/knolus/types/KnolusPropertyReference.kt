@@ -6,6 +6,8 @@ import org.abimon.knolus.KnolusUnion
 data class KnolusPropertyReference(val variableName: String, val propertyName: String) : KnolusTypedValue.RuntimeValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference> {
         override val typeHierarchicalNames: Array<String> = arrayOf("MemberVariableReference", "Reference", "Object")
+
+        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusPropertyReference
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference>
