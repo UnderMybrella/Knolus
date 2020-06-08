@@ -1,6 +1,7 @@
 package org.abimon.knolus
 
 import org.abimon.knolus.modules.functionregistry.functionBuilder
+import org.abimon.knolus.modules.functionregistry.setFunction
 import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.misc.Utils
@@ -155,20 +156,27 @@ class KnolusContext(val parent: KnolusContext?) {
                 false
             }.filter { union ->
                 val parameter = unmappedParams.firstOrNull(union::fits) ?: return@functionList
-                
+
                 passedParams[parameter.name] = union.parameter
                 unmappedParams.remove(parameter)
-                
+
                 false
             }.isEmpty()
-            
+
             if (!usedAllParams) return@functionList
 
-            unmappedParams.forEach { param -> passedParams.putIfAbsent(param.name, param.defaultValue ?: return@functionList) }
+            unmappedParams.forEach { param ->
+                when (param.missingPolicy) {
+                    KnolusFunctionParameterMissingPolicy.Mandatory -> return@functionList
+                    KnolusFunctionParameterMissingPolicy.Optional -> return@forEach
+                    is KnolusFunctionParameterMissingPolicy.Substitute<*> ->
+                        passedParams.putIfAbsent(param.name, param.missingPolicy.default)
+                }
+            }
 
             return function.suspendInvoke(this, passedParams) ?: KnolusConstants.Null
         }
-        
+
         return parent?.invokeFunction(functionName, functionParameters) ?: KnolusConstants.Undefined
     }
 }
@@ -226,3 +234,17 @@ fun <P0, P1> KnolusContext.registerOperatorFunction(
         .setOperatorFunction(typeSpec, parameterSpec, func)
         .build()
 )
+
+fun <P0, P1> KnolusContext.registerMultiOperatorFunction(
+    typeSpec: ParameterSpec<*, P0>,
+    operator: ExpressionOperator,
+    parameterSpecs: Array<ParameterSpec<*, P1>>,
+    func: suspend (context: KnolusContext, a: P0, b: P1) -> KnolusTypedValue,
+) = parameterSpecs.forEach { parameterSpec ->
+    register(
+        typeSpec.getMemberOperatorName(operator),
+        functionBuilder()
+            .setOperatorFunction(typeSpec, parameterSpec, func)
+            .build()
+    )
+}

@@ -87,6 +87,7 @@ sealed class KnolusUnion {
     }
 
     //TODO: Implement proper typing
+    //TODO: Implement optional/default policies
     data class FunctionDeclaration(
         val functionName: String,
         val parameterNames: Array<String>,
@@ -94,7 +95,7 @@ sealed class KnolusUnion {
         val body: ScopeType?,
     ) : KnolusUnion(), Action {
         fun asPipelineFunction(): KnolusFunction<KnolusTypedValue?> = KnolusFunction(
-            Array(parameterNames.size) { KnolusDeclaredFunctionParameter.Concrete(parameterNames[it], KnolusObject, null) },
+            Array(parameterNames.size) { KnolusDeclaredFunctionParameter.Concrete(parameterNames[it], KnolusObject, KnolusFunctionParameterMissingPolicy.Mandatory) },
             func = this::invoke
         )
 

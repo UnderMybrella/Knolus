@@ -2,8 +2,6 @@ package org.abimon.knolus.modules.functionregistry
 
 import org.abimon.knolus.KnolusContext
 import org.abimon.knolus.ParameterSpec
-import org.abimon.knolus.setMemberFunction
-import org.abimon.knolus.setMemberFunctionWithoutReturn
 import org.abimon.knolus.types.KnolusTypedValue
 
 fun <P0, P1> KnolusContext.registerMultiMemberFunction(

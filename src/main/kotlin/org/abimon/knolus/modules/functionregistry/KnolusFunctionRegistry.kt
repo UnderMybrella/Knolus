@@ -5,6 +5,98 @@ import org.abimon.knolus.types.KnolusTypedValue
 
 inline fun functionBuilder() = KnolusFunctionBuilder<KnolusTypedValue?>()
 
+fun <T> KnolusFunctionBuilder<T>.setFunction(func: suspend (context: KnolusContext) -> T): KnolusFunctionBuilder<T> {
+    return setFunction { context: KnolusContext, _: Map<String, KnolusTypedValue> ->
+        func(context)
+    }
+}
+
+fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(func: suspend (context: KnolusContext) -> Unit): KnolusFunctionBuilder<T?> {
+    return setFunction { context: KnolusContext, _: Map<String, KnolusTypedValue> ->
+        func(context)
+
+        null
+    }
+}
+
+fun <T, P> KnolusFunctionBuilder<T>.setFunction(parameterSpec: ParameterSpec<*, P>, func: suspend (context: KnolusContext, parameter: P) -> T): KnolusFunctionBuilder<T> {
+    addParameter(parameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val param = parameters.getValue(context, parameterSpec)
+
+        func(context, param)
+    }
+}
+
+fun <T, P> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterSpec: ParameterSpec<*, P>, func: suspend (context: KnolusContext, parameter: P) -> Unit): KnolusFunctionBuilder<T?> {
+    addParameter(parameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val param = parameters.getValue(context, parameterSpec)
+
+        func(context, param)
+
+        null
+    }
+}
+
+fun <T, P1, P2> KnolusFunctionBuilder<T>.setFunction(firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> T): KnolusFunctionBuilder<T> {
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+
+        func(context, firstParam, secondParam)
+    }
+}
+
+fun <T, P1, P2> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> Unit): KnolusFunctionBuilder<T?> {
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+
+        func(context, firstParam, secondParam)
+
+        null
+    }
+}
+
+fun <T, P1, P2, P3> KnolusFunctionBuilder<T>.setFunction(firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, thirdParameterSpec: ParameterSpec<*, P3>, func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> T): KnolusFunctionBuilder<T> {
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+    addParameter(thirdParameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+
+        func(context, firstParam, secondParam, thirdParam)
+    }
+}
+
+fun <T, P1, P2, P3> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, thirdParameterSpec: ParameterSpec<*, P3>, func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit): KnolusFunctionBuilder<T?> {
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+    addParameter(thirdParameterSpec)
+
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+
+        func(context, firstParam, secondParam, thirdParam)
+
+        null
+    }
+}
+
 fun KnolusContext.registerFunction(
     functionName: String,
     func: suspend (context: KnolusContext) -> KnolusTypedValue,

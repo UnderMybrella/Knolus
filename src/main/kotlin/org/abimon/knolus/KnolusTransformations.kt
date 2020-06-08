@@ -10,9 +10,10 @@ import kotlin.math.roundToInt
 @ExperimentalUnsignedTypes
 typealias KnolusTransform<V, T> = suspend V.(context: KnolusContext) -> T
 
-sealed class ParameterSpec<V: KnolusTypedValue, T> {
+sealed class ParameterSpec<V : KnolusTypedValue, T> {
     abstract val name: String
     abstract val type: KnolusTypedValue.TypeInfo<V>
+    abstract val default: T?
     abstract val transformation: KnolusTransform<in V, T>
 
     fun getMemberFunctionName(functionName: String): String =
@@ -23,19 +24,30 @@ sealed class ParameterSpec<V: KnolusTypedValue, T> {
 
     fun getMemberOperatorName(operator: ExpressionOperator): String =
         type.getMemberOperatorName(type.typeName, operator)
+
+    abstract infix fun withName(name: String): ParameterSpec<V, T>
+    abstract infix fun withDefault(value: T?): ParameterSpec<V, T>
 }
 
-data class RegularParameterSpec<V: KnolusTypedValue, T>(
+data class RegularParameterSpec<V : KnolusTypedValue, T>(
     override val name: String,
     override val type: KnolusTypedValue.TypeInfo<V>,
+    override val default: T?,
     override val transformation: KnolusTransform<V, T>,
-) : ParameterSpec<V, T>()
+) : ParameterSpec<V, T>() {
+    override fun withName(name: String): ParameterSpec<V, T> = copy(name = name.sanitiseFunctionIdentifier())
+    override fun withDefault(value: T?): ParameterSpec<V, T> = copy(default = value)
+}
 
-data class TypeParameterSpec<V: KnolusTypedValue, T>(
+data class TypeParameterSpec<V : KnolusTypedValue, T>(
     override val type: KnolusTypedValue.TypeInfo<V>,
     override val transformation: KnolusTransform<V, T>,
 ) : ParameterSpec<V, T>() {
     override val name: String = "self"
+    override val default: T? = null
+
+    override fun withName(name: String): ParameterSpec<V, T> = RegularParameterSpec(name, type, null, transformation)
+    override fun withDefault(value: T?): ParameterSpec<V, T> = RegularParameterSpec(name, type, value, transformation)
 }
 
 @ExperimentalUnsignedTypes
@@ -146,7 +158,7 @@ object KnolusTransformations {
     val VARIABLE_REFERENCE_SELF: KnolusTransform<KnolusVariableReference, KnolusVariableReference> = { this }
     val VARIABLE_REFERENCE_TO_INNER: KnolusTransform<KnolusVariableReference, String> = { variableName }
 
-    val MAX_HEX_STRING = String(CharArray(floor(log(Int.MAX_VALUE.toDouble(), 16.0)).toInt() + 1) { '0' })
+    val MAX_HEX_STRING = String(CharArray((floor(log(Int.MAX_VALUE.toDouble(), 16.0)).toInt() shl 1) + 2) { '0' })
     val NUMBER_TO_HEX_STRING: KnolusTransform<KnolusNumericalType, String> = {
         val int = asNumber(it).toInt()
 
@@ -158,7 +170,7 @@ object KnolusTransformations {
     }
 
     val NUMBER_TO_2_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(2) }
-    val NUMBER_TO_3_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(2) }
+    val NUMBER_TO_3_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(3) }
     val NUMBER_TO_4_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(4) }
     val NUMBER_TO_5_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(5) }
     val NUMBER_TO_6_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(6) }
@@ -166,13 +178,13 @@ object KnolusTransformations {
     val NUMBER_TO_8_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(8) }
 
     fun numberToByteHexString(byteCount: Int): KnolusTransform<KnolusNumericalType, String> {
-        val mask = (byteCount shl 1) - 1
+        val len = (byteCount shl 1)
         return {
             val int = number.toInt()
 
             buildString {
                 append("0x")
-                append(MAX_HEX_STRING.slice(0 until (mask - (log(int.toDouble(), 16.0).toInt() and mask))))
+                append(MAX_HEX_STRING.slice(0 until (len - (log(int.toDouble(), 16.0).toInt()))))
                 append(int.toString(16))
             }
         }
@@ -181,71 +193,130 @@ object KnolusTransformations {
 
 //inline fun <reified T: KnolusTypedValue.TypeInfo<*>, R> typeParameterFor(noinline transformation: KnolusTransform<R>): TypeParameterSpec<R> = TypeParameterSpec(T::class.objectInstance!!, transformation)
 
-fun <V: KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(name: String, transformation: KnolusTransform<V, T>) =
-    RegularParameterSpec(name, this, transformation)
+fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.operatorSpecWith(
+    transformation: KnolusTransform<V, T>,
+) = TypeParameterSpec(this, transformation)
 
-fun <V: KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.typeSpecWith(name: String? = null, transformation: KnolusTransform<V, T>) =
-    if (name == null) TypeParameterSpec(this, transformation) else RegularParameterSpec(name, this, transformation)
+fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(
+    name: String,
+    default: T? = null,
+    transformation: KnolusTransform<V, T>,
+) = RegularParameterSpec(name, this, default, transformation)
 
-fun objectTypeParameter(name: String? = null) = KnolusObject.typeSpecWith(name, KnolusTransformations.NONE)
-fun objectTypeAsStringParameter(name: String? = null) = KnolusObject.typeSpecWith(name, KnolusTransformations.TO_STRING)
+fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.typeSpecWith(
+    name: String? = null,
+    default: T? = null,
+    transformation: KnolusTransform<V, T>,
+) =
+    if (name == null) TypeParameterSpec(this, transformation) else RegularParameterSpec(name,
+        this,
+        default,
+        transformation)
 
-fun stringTypeParameter(name: String? = null) = KnolusString.typeSpecWith(name, KnolusTransformations.TO_STRING)
+fun objectTypeParameter(name: String? = null, default: KnolusTypedValue? = null) =
+    KnolusObject.typeSpecWith(name, default, KnolusTransformations.NONE)
+
+fun objectTypeAsStringParameter(name: String? = null, default: String? = null) =
+    KnolusObject.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
+
+fun stringTypeParameter(name: String? = null, default: String? = null) =
+    KnolusString.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
 //fun stringCompsTypeParameter(): TypeParameterSpec<KnolusLazyString> = TypeParameterSpec("StringComponents", KnolusTransformations.STRING_COMPONENTS_CAST)
 //fun stringCompsTypeAsComponentsParameter(): TypeParameterSpec<Array<KnolusUnion.StringComponent>> = TypeParameterSpec("StringComponents", KnolusTransformations.STRING_COMPONENTS_TO_INNER)
 //fun stringCompsTypeAsStringArrayParameter(): TypeParameterSpec<Array<String>> = TypeParameterSpec("StringComponents", KnolusTransformations.STRING_COMPONENTS_AS_STRING_ARRAY)
 //fun stringCompsTypeAsStringParameter(): TypeParameterSpec<String> = TypeParameterSpec("StringComponents", KnolusTransformations.TO_STRING)
 
-fun booleanTypeParameter(name: String? = null) = KnolusBoolean.typeSpecWith(name, KnolusTransformations.TO_BOOLEAN)
-fun booleanTypeAsIntParameter(name: String? = null) = KnolusBoolean.typeSpecWith(name, KnolusTransformations.TO_INT)
-fun booleanTypeAsStringParameter(name: String? = null) =
-    KnolusBoolean.typeSpecWith(name, KnolusTransformations.TO_STRING)
+fun booleanTypeParameter(name: String? = null, default: Boolean? = null) =
+    KnolusBoolean.typeSpecWith(name, default, KnolusTransformations.TO_BOOLEAN)
 
-fun numberTypeParameter(name: String? = null) = KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_NUMBER)
-fun numberTypeAsIntParameter(name: String? = null) =
-    KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_INT)
+fun booleanTypeAsIntParameter(name: String? = null, default: Int? = null) =
+    KnolusBoolean.typeSpecWith(name, default, KnolusTransformations.TO_INT)
 
-fun numberTypeAsDoubleParameter(name: String? = null) =
-    KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_DOUBLE)
+fun booleanTypeAsStringParameter(name: String? = null, default: String? = null) =
+    KnolusBoolean.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
-fun numberTypeAsBooleanParameter(name: String? = null) =
-    KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_BOOLEAN)
+fun numberTypeParameter(name: String? = null, default: Number? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_NUMBER)
 
-fun numberTypeAsCharParameter(name: String? = null) =
-    KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_CHAR)
+fun numberTypeAsIntParameter(name: String? = null, default: Int? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_INT)
 
-fun numberTypeAsStringParameter(name: String? = null) =
-    KnolusNumericalType.typeSpecWith(name, KnolusTransformations.TO_STRING)
+fun numberTypeAsDoubleParameter(name: String? = null, default: Double? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_DOUBLE)
 
-fun intTypeParameter(name: String? = null) = KnolusInt.typeSpecWith(name, KnolusTransformations.TO_INT)
-fun intTypeAsDoubleParameter(name: String? = null) = KnolusInt.typeSpecWith(name, KnolusTransformations.TO_DOUBLE)
-fun intTypeAsBooleanParameter(name: String? = null) = KnolusInt.typeSpecWith(name, KnolusTransformations.TO_BOOLEAN)
-fun intTypeAsCharParameter(name: String? = null) = KnolusInt.typeSpecWith(name, KnolusTransformations.TO_CHAR)
+fun numberTypeAsBooleanParameter(name: String? = null, default: Boolean? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_BOOLEAN)
 
-fun doubleTypeParameter(name: String? = null) = KnolusDouble.typeSpecWith(name, KnolusTransformations.TO_DOUBLE)
-fun doubleTypeAsIntParameter(name: String? = null) = KnolusDouble.typeSpecWith(name, KnolusTransformations.TO_INT)
-fun doubleTypeAsBooleanParameter(name: String? = null) =
-    KnolusDouble.typeSpecWith(name, KnolusTransformations.TO_BOOLEAN)
+fun numberTypeAsCharParameter(name: String? = null, default: Char? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_CHAR)
 
-fun doubleTypeAsCharParameter(name: String? = null) = KnolusDouble.typeSpecWith(name, KnolusTransformations.TO_CHAR)
+fun numberTypeAsStringParameter(name: String? = null, default: String? = null) =
+    KnolusNumericalType.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
-fun charTypeParameter(name: String? = null) = KnolusChar.typeSpecWith(name, KnolusTransformations.TO_CHAR)
-fun charTypeAsIntParameter(name: String? = null) = KnolusChar.typeSpecWith(name, KnolusTransformations.TO_INT)
-fun charTypeAsDoubleParameter(name: String? = null) = KnolusChar.typeSpecWith(name, KnolusTransformations.TO_DOUBLE)
-fun charTypeAsBooleanParameter(name: String? = null) = KnolusChar.typeSpecWith(name, KnolusTransformations.TO_BOOLEAN)
+fun intTypeParameter(name: String? = null, default: Int? = null) =
+    KnolusInt.typeSpecWith(name, default, KnolusTransformations.TO_INT)
 
-fun arrayTypeAsCharArrayParameter(name: String? = null) = KnolusArray.typeSpecWith(name, KnolusTransformations.TO_CHAR_ARRAY)
+fun intTypeAsDoubleParameter(name: String? = null, default: Double? = null) =
+    KnolusInt.typeSpecWith(name, default, KnolusTransformations.TO_DOUBLE)
 
-fun variableReferenceTypeParameter(name: String? = null) =
-    KnolusVariableReference.typeSpecWith(name, KnolusTransformations.VARIABLE_REFERENCE_SELF)
+fun intTypeAsBooleanParameter(name: String? = null, default: Boolean? = null) =
+    KnolusInt.typeSpecWith(name, default, KnolusTransformations.TO_BOOLEAN)
 
+fun intTypeAsCharParameter(name: String? = null, default: Char? = null) =
+    KnolusInt.typeSpecWith(name, default, KnolusTransformations.TO_CHAR)
 
-suspend fun <V: KnolusTypedValue, T> ParameterSpec<V, T>.transform(context: KnolusContext, value: V): T =
+fun doubleTypeParameter(name: String? = null, default: Double? = null) =
+    KnolusDouble.typeSpecWith(name, default, KnolusTransformations.TO_DOUBLE)
+
+fun doubleTypeAsIntParameter(name: String? = null, default: Int? = null) =
+    KnolusDouble.typeSpecWith(name, default, KnolusTransformations.TO_INT)
+
+fun doubleTypeAsBooleanParameter(name: String? = null, default: Boolean? = null) =
+    KnolusDouble.typeSpecWith(name, default, KnolusTransformations.TO_BOOLEAN)
+
+fun doubleTypeAsCharParameter(name: String? = null, default: Char? = null) =
+    KnolusDouble.typeSpecWith(name, default, KnolusTransformations.TO_CHAR)
+
+fun charTypeParameter(name: String? = null, default: Char? = null) =
+    KnolusChar.typeSpecWith(name, default, KnolusTransformations.TO_CHAR)
+
+fun charTypeAsIntParameter(name: String? = null, default: Int? = null) =
+    KnolusChar.typeSpecWith(name, default, KnolusTransformations.TO_INT)
+
+fun charTypeAsDoubleParameter(name: String? = null, default: Double? = null) =
+    KnolusChar.typeSpecWith(name, default, KnolusTransformations.TO_DOUBLE)
+
+fun charTypeAsBooleanParameter(name: String? = null, default: Boolean? = null) =
+    KnolusChar.typeSpecWith(name, default, KnolusTransformations.TO_BOOLEAN)
+
+fun arrayTypeAsCharArrayParameter(name: String? = null, default: CharArray? = null) =
+    KnolusArray.typeSpecWith(name, default, KnolusTransformations.TO_CHAR_ARRAY)
+
+fun variableReferenceTypeParameter(name: String? = null, default: KnolusVariableReference? = null) =
+    KnolusVariableReference.typeSpecWith(name, default, KnolusTransformations.VARIABLE_REFERENCE_SELF)
+
+fun nullTypeAsStringParameter(name: String? = null, default: String? = null) =
+    KnolusConstants.Null.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
+
+fun undefinedTypeAsStringParameter(name: String? = null, default: String? = null) =
+    KnolusConstants.Undefined.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
+
+suspend fun <V : KnolusTypedValue, T> ParameterSpec<V, T>.transform(context: KnolusContext, value: V): T =
     transformation(value, context)
 
-suspend fun <V: KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(context: KnolusContext, spec: ParameterSpec<V, T>): T =
-    spec.transform(context, getValue(spec.name.sanitiseFunctionIdentifier()) as V)
+suspend fun <V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(
+    context: KnolusContext,
+    spec: ParameterSpec<V, T>,
+): T {
+    val value = (get(spec.name.sanitiseFunctionIdentifier())?: return spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory")) as V
+    return spec.transform(context, value)
+}
 
-suspend fun <V: KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(context: KnolusContext, spec: ParameterSpec<V, T>): T? =
-    (get(spec.name.sanitiseFunctionIdentifier()) as? V)?.let { spec.transform(context, it) }
+suspend fun <V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
+    context: KnolusContext,
+    spec: ParameterSpec<V, T>,
+): T? {
+    val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return spec.default
+    return spec.transform(context, value)
+}
