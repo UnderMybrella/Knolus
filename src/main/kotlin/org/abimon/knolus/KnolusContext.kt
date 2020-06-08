@@ -208,80 +208,27 @@ internal fun String.sanitiseFunctionIdentifier(): String = toUpperCase().replace
 
 private inline fun functionBuilder() = KnolusFunctionBuilder<KnolusTypedValue?>()
 
-/** Regular function registers */
-fun KnolusContext.registerFunction(
-    functionName: String,
-    parameterName: String,
-    func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> KnolusTypedValue,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunction(parameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerFunctionWithoutReturn(
-    functionName: String,
-    parameterName: String,
-    func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> Unit,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunctionWithoutReturn(parameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerFunction(
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> KnolusTypedValue,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunction(firstParameterName, secondParameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerFunctionWithoutReturn(
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> Unit,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunctionWithoutReturn(firstParameterName, secondParameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerFunction(
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    thirdParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> KnolusTypedValue,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunction(firstParameterName, secondParameterName, thirdParameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerFunctionWithoutReturn(
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    thirdParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> Unit,
-) = register(
-    functionName,
-    functionBuilder()
-        .setFunctionWithoutReturn(firstParameterName, secondParameterName, thirdParameterName, func)
-        .build()
-)
-
 /** Regular Spec Functions */
+
+fun KnolusContext.registerFunction(
+    functionName: String,
+    func: suspend (context: KnolusContext) -> KnolusTypedValue,
+) = register(
+    functionName,
+    functionBuilder()
+        .setFunction(func)
+        .build()
+)
+
+fun KnolusContext.registerFunctionWithoutReturn(
+    functionName: String,
+    func: suspend (context: KnolusContext) -> Unit,
+) = register(
+    functionName,
+    functionBuilder()
+        .setFunctionWithoutReturn(func)
+        .build()
+)
 
 fun <P> KnolusContext.registerFunction(
     functionName: String,
@@ -364,7 +311,7 @@ fun <P0> KnolusContext.registerMemberFunction(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunction(typeSpec, func)
+        .setMemberFunction(typeSpec, func)
         .build()
 )
 
@@ -375,7 +322,7 @@ fun <P0> KnolusContext.registerMemberFunctionWithoutReturn(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunctionWithoutReturn(typeSpec, func)
+        .setMemberFunctionWithoutReturn(typeSpec, func)
         .build()
 )
 
@@ -387,7 +334,7 @@ fun <P0, P1> KnolusContext.registerMemberFunction(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunction(typeSpec, parameterSpec, func)
+        .setMemberFunction(typeSpec, parameterSpec, func)
         .build()
 )
 
@@ -399,7 +346,7 @@ fun <P0, P1> KnolusContext.registerMemberFunctionWithoutReturn(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunctionWithoutReturn(typeSpec, parameterSpec, func)
+        .setMemberFunctionWithoutReturn(typeSpec, parameterSpec, func)
         .build()
 )
 
@@ -412,7 +359,7 @@ fun <P0, P1, P2> KnolusContext.registerMemberFunction(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
+        .setMemberFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
 )
 
@@ -425,7 +372,7 @@ fun <P0, P1, P2> KnolusContext.registerMemberFunctionWithoutReturn(
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
-        .setFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
+        .setMemberFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
 )
 
