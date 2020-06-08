@@ -1,5 +1,6 @@
 package org.abimon.knolus
 
+import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.misc.Utils
 import org.antlr.v4.runtime.tree.Tree
@@ -37,13 +38,13 @@ fun toStringTree(t: Tree, ruleNames: List<String?>?, indent: Int = 0): String? {
 
 @ExperimentalUnsignedTypes
 class KnolusContext(val parent: KnolusContext?) {
-    private val variableRegistry: MutableMap<String, VariableValue> = HashMap()
-    private val functionRegistry: MutableMap<String, MutableList<KnolusFunction<VariableValue?>>> =
+    private val variableRegistry: MutableMap<String, KnolusTypedValue> = HashMap()
+    private val functionRegistry: MutableMap<String, MutableList<KnolusFunction<KnolusTypedValue?>>> =
         HashMap()
 
-    operator fun get(key: String): VariableValue? = variableRegistry[key] ?: parent?.get(key)
+    operator fun get(key: String): KnolusTypedValue? = variableRegistry[key] ?: parent?.get(key)
 
-    operator fun set(key: String, global: Boolean = false, value: VariableValue) {
+    operator fun set(key: String, global: Boolean = false, value: KnolusTypedValue) {
         if (global && parent != null) {
             parent[key, global] = value
         } else {
@@ -53,28 +54,28 @@ class KnolusContext(val parent: KnolusContext?) {
 
     operator fun contains(key: String): Boolean = key in variableRegistry || (parent?.contains(key) ?: false)
 
-    fun register(name: String, init: KnolusFunctionBuilder<VariableValue?>.() -> Unit) {
-        val builder = KnolusFunctionBuilder<VariableValue?>()
+    fun register(name: String, init: KnolusFunctionBuilder<KnolusTypedValue?>.() -> Unit) {
+        val builder = KnolusFunctionBuilder<KnolusTypedValue?>()
         builder.init()
         register(name, builder.build())
     }
 
     fun register(
         name: String,
-        func: suspend (context: KnolusContext, parameters: Map<String, VariableValue>) -> VariableValue?,
-        init: KnolusFunctionBuilder<VariableValue?>.() -> Unit
+        func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> KnolusTypedValue?,
+        init: KnolusFunctionBuilder<KnolusTypedValue?>.() -> Unit,
     ) {
-        val builder = KnolusFunctionBuilder<VariableValue?>()
+        val builder = KnolusFunctionBuilder<KnolusTypedValue?>()
         builder.setFunction(func)
         builder.init()
         register(name, builder.build())
     }
 
-    fun register(name: String, func: KnolusFunction<VariableValue?>, global: Boolean = false) {
+    fun register(name: String, func: KnolusFunction<KnolusTypedValue?>, global: Boolean = false) {
         if (global && parent != null) {
             parent.register(name, func, global)
         } else {
-            val functions: MutableList<KnolusFunction<VariableValue?>>
+            val functions: MutableList<KnolusFunction<KnolusTypedValue?>>
             if (name.sanitiseFunctionIdentifier() !in functionRegistry) {
                 functions = ArrayList()
                 functionRegistry[name.sanitiseFunctionIdentifier()] = functions
@@ -86,39 +87,77 @@ class KnolusContext(val parent: KnolusContext?) {
         }
     }
 
-    suspend fun invokeScript(
-        scriptName: String,
-        scriptParameters: Array<KnolusUnion.ScriptParameterType>
-    ): VariableValue? = invokeFunction(
-        scriptName,
-        Array(scriptParameters.size) { i ->
-            KnolusUnion.FunctionParameterType(
-                scriptParameters[i].name,
-                scriptParameters[i].parameter
-            )
-        })
+//    suspend fun invokeScript(
+//        scriptName: String,
+//        scriptParameters: Array<KnolusUnion.ScriptParameterType>
+//    ): KnolusTypedValue? = invokeFunction(
+//        scriptName,
+//        Array(scriptParameters.size) { i ->
+//            KnolusUnion.FunctionParameterType(
+//                scriptParameters[i].name,
+//                scriptParameters[i].parameter
+//            )
+//        })
+
+    suspend fun invokeMemberFunction(
+        member: KnolusTypedValue,
+        functionName: String,
+        functionParameters: Array<KnolusUnion.FunctionParameterType>,
+    ): KnolusTypedValue? {
+        val params = arrayOfNulls<KnolusUnion.FunctionParameterType>(functionParameters.size + 1)
+        params[0] = KnolusUnion.FunctionParameterType("self", member)
+        functionParameters.copyInto(params, 1)
+
+        @Suppress("UNCHECKED_CAST")
+        params as Array<KnolusUnion.FunctionParameterType>
+
+        return member.typeInfo.getMemberFunctionNames(functionName).fold(null as KnolusTypedValue?) { acc, funcName ->
+            acc ?: invokeFunction(funcName, params)
+        }
+    }
+
+    suspend fun invokeMemberPropertyGetter(member: KnolusTypedValue, propertyName: String): KnolusTypedValue? {
+        val params = arrayOf(KnolusUnion.FunctionParameterType("self", member))
+
+        return member.typeInfo.getMemberPropertyGetterNames(propertyName)
+            .fold(null as KnolusTypedValue?) { acc, funcName ->
+                acc ?: invokeFunction(funcName, params)
+            }
+    }
+
+    suspend fun invokeOperator(
+        operator: ExpressionOperator,
+        a: KnolusTypedValue,
+        b: KnolusTypedValue,
+    ): KnolusTypedValue? {
+        val params = arrayOf(KnolusUnion.FunctionParameterType("a", a), KnolusUnion.FunctionParameterType("b", b))
+
+        return a.typeInfo.getMemberFunctionNames(operator.functionCallName)
+            .fold(null as KnolusTypedValue?) { acc, funcName ->
+                acc ?: invokeFunction(funcName, params)
+            }
+    }
 
     suspend fun invokeFunction(
         functionName: String,
-        functionParameters: Array<KnolusUnion.FunctionParameterType>
-    ): VariableValue? {
-        val flattened = functionParameters.map { (name, value) ->
-            if (name != null) KnolusUnion.FunctionParameterType(
-                name,
-                value
-            ) else KnolusUnion.FunctionParameterType(null, value.flatten(this))
-        }
+        functionParameters: Array<KnolusUnion.FunctionParameterType>,
+    ): KnolusTypedValue? {
+//        val flattened = functionParameters.map { (name, value) ->
+//            if (name != null) KnolusUnion.FunctionParameterType(
+//                name,
+//                value.evaluateOrSelf(this)
+//            ) else KnolusUnion.FunctionParameterType(null, value.evaluateOrSelf(this))
+//        }
 
 //        println("Calling $functionName(${flattened.map { value -> "${value.name}=${value.parameter.asString(this)}" }.joinToString()})")
 
-        val flatPassed = flattened.count()
         val function = functionRegistry[functionName.sanitiseFunctionIdentifier()]
-            ?.firstOrNull { func -> (flatPassed >= func.parameters.count { (_, default) -> default == null } && flatPassed <= func.parameters.size) || (func.variadicSupported && flatPassed >= func.parameters.size) }
-            ?: return parent?.invokeFunction(functionName, flattened.toTypedArray())
+            ?.firstOrNull { func -> (functionParameters.size >= func.parameters.count { (_, default) -> default == null } && functionParameters.size <= func.parameters.size) || (func.variadicSupported && functionParameters.size >= func.parameters.size) }
+            ?: return parent?.invokeFunction(functionName, functionParameters)
 
         val functionParams = function.parameters.toMutableList()
-        val passedParams: MutableMap<String, VariableValue> = HashMap()
-        flattened.filter { union ->
+        val passedParams: MutableMap<String, KnolusTypedValue> = HashMap()
+        functionParameters.filter { union ->
             //            if (union !is PipelineUnion.FunctionParameterType) return@forEach
             val parameter = functionParams.firstOrNull { (p) ->
                 p == union.name?.sanitiseFunctionIdentifier()
@@ -136,7 +175,7 @@ class KnolusContext(val parent: KnolusContext?) {
 
         functionParams.forEach { (name, default) -> passedParams.putIfAbsent(name, default ?: return@forEach) }
 
-        return function.suspendInvoke(this, passedParams) ?: VariableValue.NullType
+        return function.suspendInvoke(this, passedParams) ?: KnolusConstants.Null
     }
 }
 
@@ -144,17 +183,20 @@ class KnolusContext(val parent: KnolusContext?) {
 suspend fun KnolusUnion.ScopeType.run(
     parentContext: KnolusContext? = null,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext.() -> Unit = {}
-): VariableValue? {
+    init: KnolusContext.() -> Unit = {},
+): KnolusTypedValue? {
     val knolusContext = KnolusContext(parentContext)
-    parameters.forEach { (k, v) -> knolusContext[k] = v as? VariableValue ?: return@forEach }
+    parameters.forEach { (k, v) -> knolusContext[k] = v as? KnolusTypedValue ?: return@forEach }
 
     knolusContext.init()
 
     lines.forEach { union ->
         when (union) {
             is KnolusUnion.Action -> union.run(knolusContext)
-            is KnolusUnion.ReturnStatement -> return union.value.flatten(knolusContext)
+            is KnolusUnion.VariableValue<*> ->
+                if (union.value is KnolusUnion.Action)
+                    (union.value as KnolusUnion.Action).run(knolusContext)
+            is KnolusUnion.ReturnStatement -> return union.value.evaluateOrSelf(knolusContext)
         }
     }
 
@@ -164,13 +206,13 @@ suspend fun KnolusUnion.ScopeType.run(
 internal val SEPARATOR_CHARACTERS = "[_\\- ]".toRegex()
 internal fun String.sanitiseFunctionIdentifier(): String = toUpperCase().replace(SEPARATOR_CHARACTERS, "")
 
-private inline fun functionBuilder() = KnolusFunctionBuilder<VariableValue?>()
+private inline fun functionBuilder() = KnolusFunctionBuilder<KnolusTypedValue?>()
 
 /** Regular function registers */
 fun KnolusContext.registerFunction(
     functionName: String,
     parameterName: String,
-    func: suspend (context: KnolusContext, parameter: VariableValue) -> VariableValue
+    func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -181,7 +223,7 @@ fun KnolusContext.registerFunction(
 fun KnolusContext.registerFunctionWithoutReturn(
     functionName: String,
     parameterName: String,
-    func: suspend (context: KnolusContext, parameter: VariableValue) -> Unit
+    func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -193,7 +235,7 @@ fun KnolusContext.registerFunction(
     functionName: String,
     firstParameterName: String,
     secondParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue) -> VariableValue
+    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -205,7 +247,7 @@ fun KnolusContext.registerFunctionWithoutReturn(
     functionName: String,
     firstParameterName: String,
     secondParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue) -> Unit
+    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -218,7 +260,7 @@ fun KnolusContext.registerFunction(
     firstParameterName: String,
     secondParameterName: String,
     thirdParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue, thirdParameter: VariableValue) -> VariableValue
+    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -231,7 +273,7 @@ fun KnolusContext.registerFunctionWithoutReturn(
     firstParameterName: String,
     secondParameterName: String,
     thirdParameterName: String,
-    func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue, thirdParameter: VariableValue) -> Unit
+    func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -244,7 +286,7 @@ fun KnolusContext.registerFunctionWithoutReturn(
 fun <P> KnolusContext.registerFunction(
     functionName: String,
     parameterSpec: ParameterSpec<P>,
-    func: suspend (context: KnolusContext, parameter: P) -> VariableValue
+    func: suspend (context: KnolusContext, parameter: P) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -255,7 +297,7 @@ fun <P> KnolusContext.registerFunction(
 fun <P> KnolusContext.registerFunctionWithoutReturn(
     functionName: String,
     parameterSpec: ParameterSpec<P>,
-    func: suspend (context: KnolusContext, parameter: P) -> Unit
+    func: suspend (context: KnolusContext, parameter: P) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -267,7 +309,7 @@ fun <P1, P2> KnolusContext.registerFunction(
     functionName: String,
     firstParameterSpec: ParameterSpec<P1>,
     secondParameterSpec: ParameterSpec<P2>,
-    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> VariableValue
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -279,7 +321,7 @@ fun <P1, P2> KnolusContext.registerFunctionWithoutReturn(
     functionName: String,
     firstParameterSpec: ParameterSpec<P1>,
     secondParameterSpec: ParameterSpec<P2>,
-    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> Unit
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -292,7 +334,7 @@ fun <P1, P2, P3> KnolusContext.registerFunction(
     firstParameterSpec: ParameterSpec<P1>,
     secondParameterSpec: ParameterSpec<P2>,
     thirdParameterSpec: ParameterSpec<P3>,
-    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> VariableValue
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> KnolusTypedValue,
 ) = register(
     functionName,
     functionBuilder()
@@ -305,7 +347,7 @@ fun <P1, P2, P3> KnolusContext.registerFunctionWithoutReturn(
     firstParameterName: ParameterSpec<P1>,
     secondParameterName: ParameterSpec<P2>,
     thirdParameterName: ParameterSpec<P3>,
-    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit,
 ) = register(
     functionName,
     functionBuilder()
@@ -315,86 +357,25 @@ fun <P1, P2, P3> KnolusContext.registerFunctionWithoutReturn(
 
 /** Register member functions */
 
-fun KnolusContext.registerMemberFunction(
-    typeName: String,
-    functionName: String,
-    func: suspend (context: KnolusContext, self: VariableValue) -> VariableValue
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunction("self", func)
-        .build()
-)
-
-fun KnolusContext.registerMemberFunctionWithoutReturn(
-    typeName: String,
-    functionName: String,
-    func: suspend (context: KnolusContext, self: VariableValue) -> Unit
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunctionWithoutReturn("self", func)
-        .build()
-)
-
-fun KnolusContext.registerMemberFunction(
-    typeName: String,
-    functionName: String,
-    parameterName: String,
-    func: suspend (context: KnolusContext, self: VariableValue, parameter: VariableValue) -> VariableValue
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunction("self", parameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerMemberFunctionWithoutReturn(
-    typeName: String,
-    functionName: String,
-    parameterName: String,
-    func: suspend (context: KnolusContext, self: VariableValue, parameter: VariableValue) -> Unit
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunctionWithoutReturn("self", parameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerMemberFunction(
-    typeName: String,
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    func: suspend (context: KnolusContext, self: VariableValue, firstParameter: VariableValue, secondParameter: VariableValue) -> VariableValue
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunction("self", firstParameterName, secondParameterName, func)
-        .build()
-)
-
-fun KnolusContext.registerMemberFunctionWithoutReturn(
-    typeName: String,
-    functionName: String,
-    firstParameterName: String,
-    secondParameterName: String,
-    func: suspend (context: KnolusContext, self: VariableValue, firstParameter: VariableValue, secondParameter: VariableValue) -> Unit
-) = register(
-    "Get${typeName}MemberFunction_${functionName}",
-    functionBuilder()
-        .setFunctionWithoutReturn("self", firstParameterName, secondParameterName, func)
-        .build()
-)
-
 fun <P0> KnolusContext.registerMemberFunction(
     typeSpec: TypeParameterSpec<P0>,
     functionName: String,
-    func: suspend (context: KnolusContext, self: P0) -> VariableValue
+    func: suspend (context: KnolusContext, self: P0) -> KnolusTypedValue,
 ) = register(
-    "Get${typeSpec.typeName}MemberFunction_${functionName}",
+    typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
         .setFunction(typeSpec, func)
+        .build()
+)
+
+fun <P0> KnolusContext.registerMemberFunctionWithoutReturn(
+    typeSpec: TypeParameterSpec<P0>,
+    functionName: String,
+    func: suspend (context: KnolusContext, self: P0) -> Unit,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder()
+        .setFunctionWithoutReturn(typeSpec, func)
         .build()
 )
 
@@ -402,9 +383,9 @@ fun <P0, P1> KnolusContext.registerMemberFunction(
     typeSpec: TypeParameterSpec<P0>,
     functionName: String,
     parameterSpec: ParameterSpec<P1>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> VariableValue
+    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> KnolusTypedValue,
 ) = register(
-    "Get${typeSpec.typeName}MemberFunction_${functionName}",
+    typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
         .setFunction(typeSpec, parameterSpec, func)
         .build()
@@ -414,9 +395,9 @@ fun <P0, P1> KnolusContext.registerMemberFunctionWithoutReturn(
     typeSpec: TypeParameterSpec<P0>,
     functionName: String,
     parameterSpec: ParameterSpec<P1>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> Unit
+    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> Unit,
 ) = register(
-    "Get${typeSpec.typeName}MemberFunction_${functionName}",
+    typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
         .setFunctionWithoutReturn(typeSpec, parameterSpec, func)
         .build()
@@ -427,9 +408,9 @@ fun <P0, P1, P2> KnolusContext.registerMemberFunction(
     functionName: String,
     firstParameterSpec: ParameterSpec<P1>,
     secondParameterSpec: ParameterSpec<P2>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> VariableValue
+    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
 ) = register(
-    "Get${typeSpec.typeName}MemberFunction_${functionName}",
+    typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
         .setFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
@@ -440,9 +421,9 @@ fun <P0, P1, P2> KnolusContext.registerMemberFunctionWithoutReturn(
     functionName: String,
     firstParameterSpec: ParameterSpec<P1>,
     secondParameterSpec: ParameterSpec<P2>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> Unit
+    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> Unit,
 ) = register(
-    "Get${typeSpec.typeName}MemberFunction_${functionName}",
+    typeSpec.getMemberFunctionName(functionName),
     functionBuilder()
         .setFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
@@ -450,23 +431,12 @@ fun <P0, P1, P2> KnolusContext.registerMemberFunctionWithoutReturn(
 
 /** Getter */
 
-fun KnolusContext.registerMemberPropertyGetter(
-    typeName: String,
-    functionName: String,
-    func: suspend (context: KnolusContext, self: VariableValue) -> VariableValue
-) = register(
-    "Get${typeName}MemberProperty_${functionName}",
-    functionBuilder()
-        .setFunction("self", func)
-        .build()
-)
-
 fun <P0> KnolusContext.registerMemberPropertyGetter(
     typeSpec: TypeParameterSpec<P0>,
     propertyName: String,
-    func: suspend (context: KnolusContext, self: P0) -> VariableValue
+    func: suspend (context: KnolusContext, self: P0) -> KnolusTypedValue,
 ) = register(
-    "Get${typeSpec.typeName}MemberProperty_${propertyName}",
+    typeSpec.getMemberPropertyGetterName(propertyName),
     functionBuilder()
         .setFunction(typeSpec, func)
         .build()

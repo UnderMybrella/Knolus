@@ -1,31 +1,39 @@
 package org.abimon.knolus
 
+import org.abimon.knolus.types.KnolusChar
+import org.abimon.knolus.types.KnolusLazyString
+import org.abimon.knolus.types.KnolusTypedValue
+
 interface KnolusResult<T> {
     @Suppress("UNCHECKED_CAST")
     companion object {
+        fun <T: KnolusTypedValue.RuntimeValue> knolusLazy(value: T): KnolusResult<KnolusUnion.VariableValue<T>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Lazy(value))
+
         @ExperimentalUnsignedTypes
-        fun <T: VariableValue> unionVariable(value: T): KnolusResult<T> = UnionVariableSuccess(value) as KnolusResult<T>
+        fun <T: KnolusTypedValue> knolusValue(value: T): KnolusResult<KnolusUnion.VariableValue<T>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Stable(value))
         @ExperimentalUnsignedTypes
-        fun unionCharVariable(value: Char): KnolusResult<VariableValue.CharType> = UnionVariableSuccess(VariableValue.CharType(value)) as KnolusResult<VariableValue.CharType>
+        fun knolusCharValue(value: Char): KnolusResult<KnolusUnion.VariableValue<KnolusChar>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Stable(KnolusChar(value)))
+        fun knolusLazyString(value: KnolusLazyString): KnolusResult<KnolusUnion.VariableValue<KnolusLazyString>> = KnolusTypedSuccess(
+            KnolusUnion.VariableValue.Lazy((value)))
 
         /** Expression Operations */
         @ExperimentalUnsignedTypes
-        fun <T: ExpressionOperation> unionExpressionOperation(value: T): KnolusResult<T> = UnionExpressionOperationSuccess(value) as KnolusResult<T>
+        fun <T: ExpressionOperator> unionExpressionOperation(value: T): KnolusResult<T> = UnionExpressionOperationSuccess(value) as KnolusResult<T>
         @ExperimentalUnsignedTypes
-        fun unionExprPlus(): KnolusResult<ExpressionOperation> = UnionExpressionOperationSuccess(
-            ExpressionOperation.PLUS)
+        fun unionExprPlus(): KnolusResult<ExpressionOperator> = UnionExpressionOperationSuccess(
+            ExpressionOperator.PLUS)
         @ExperimentalUnsignedTypes
-        fun unionExprMinus(): KnolusResult<ExpressionOperation> = UnionExpressionOperationSuccess(
-            ExpressionOperation.MINUS)
+        fun unionExprMinus(): KnolusResult<ExpressionOperator> = UnionExpressionOperationSuccess(
+            ExpressionOperator.MINUS)
         @ExperimentalUnsignedTypes
-        fun unionExprDivide(): KnolusResult<ExpressionOperation> = UnionExpressionOperationSuccess(
-            ExpressionOperation.DIVIDE)
+        fun unionExprDivide(): KnolusResult<ExpressionOperator> = UnionExpressionOperationSuccess(
+            ExpressionOperator.DIVIDE)
         @ExperimentalUnsignedTypes
-        fun unionExprMultiply(): KnolusResult<ExpressionOperation> = UnionExpressionOperationSuccess(
-            ExpressionOperation.MULTIPLY)
+        fun unionExprMultiply(): KnolusResult<ExpressionOperator> = UnionExpressionOperationSuccess(
+            ExpressionOperator.MULTIPLY)
         @ExperimentalUnsignedTypes
-        fun unionExprExponential(): KnolusResult<ExpressionOperation> = UnionExpressionOperationSuccess(
-            ExpressionOperation.EXPONENTIAL)
+        fun unionExprExponential(): KnolusResult<ExpressionOperator> = UnionExpressionOperationSuccess(
+            ExpressionOperator.EXPONENTIAL)
 
         @ExperimentalUnsignedTypes
         fun <T: KnolusUnion> union(value: T): KnolusResult<T> = UnionSuccess(value) as KnolusResult<T>
@@ -114,20 +122,20 @@ private inline class UnionSuccess(override val value: KnolusUnion) : KnolusResul
 }
 
 @ExperimentalUnsignedTypes
-private inline class UnionExpressionOperationSuccess(override val value: ExpressionOperation) : KnolusResult.Successful<ExpressionOperation> {
-    override fun get(): ExpressionOperation = value
+private inline class UnionExpressionOperationSuccess(override val value: ExpressionOperator) : KnolusResult.Successful<ExpressionOperator> {
+    override fun get(): ExpressionOperator = value
 
-    override operator fun component1(): ExpressionOperation = value
+    override operator fun component1(): ExpressionOperator = value
 
     override fun toString(): String =
         "UnionSuccess(value=$value)"
 }
 
 @ExperimentalUnsignedTypes
-private inline class UnionVariableSuccess(override val value: VariableValue) : KnolusResult.Successful<VariableValue> {
-    override fun get(): VariableValue = value
+private inline class KnolusTypedSuccess<T: KnolusTypedValue>(override val value: KnolusUnion.VariableValue<T>) : KnolusResult.Successful<KnolusUnion.VariableValue<T>> {
+    override fun get(): KnolusUnion.VariableValue<T> = value
 
-    override operator fun component1(): VariableValue = value
+    override operator fun component1(): KnolusUnion.VariableValue<T> = value
 
     override fun toString(): String =
         "UnionVariableSuccess(value=$value)"

@@ -1,27 +1,30 @@
 package org.abimon.knolus
 
+import org.abimon.knolus.types.KnolusBoolean
+import org.abimon.knolus.types.KnolusTypedValue
+
 @ExperimentalUnsignedTypes
-class KnolusFunction<T>(vararg val parameters: Pair<String, VariableValue?>, val variadicSupported: Boolean = false, val func: suspend (context: KnolusContext, parameters: Map<String, VariableValue>) -> T) {
-    suspend fun suspendInvoke(context: KnolusContext, parameters: Map<String, VariableValue>) = func(context, parameters)
+class KnolusFunction<T>(vararg val parameters: Pair<String, KnolusTypedValue?>, val variadicSupported: Boolean = false, val func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T) {
+    suspend fun suspendInvoke(context: KnolusContext, parameters: Map<String, KnolusTypedValue>) = func(context, parameters)
 }
 
 class KnolusFunctionBuilder<T> {
-    val parameters: MutableList<Pair<String, VariableValue?>> =
+    val parameters: MutableList<Pair<String, KnolusTypedValue?>> =
         ArrayList()
     var variadicSupported = false
-    lateinit var func: suspend (context: KnolusContext, parameters: Map<String, VariableValue>) -> T
+    lateinit var func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T
 
-    fun addParameter(name: String, default: VariableValue? = null): KnolusFunctionBuilder<T> {
+    fun addParameter(name: String, default: KnolusTypedValue? = null): KnolusFunctionBuilder<T> {
         parameters.add(Pair(name.sanitiseFunctionIdentifier(), default))
 
         return this
     }
 
     fun addFlag(name: String, default: Boolean = false): KnolusFunctionBuilder<T> = addParameter(name,
-        VariableValue.BooleanType(default)
+        KnolusBoolean(default)
     )
 
-    fun setFunction(func: suspend (context: KnolusContext, parameters: Map<String, VariableValue>) -> T): KnolusFunctionBuilder<T> {
+    fun setFunction(func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T): KnolusFunctionBuilder<T> {
         this.func = func
 
         return this
@@ -34,20 +37,20 @@ class KnolusFunctionBuilder<T> {
     )
 }
 
-fun <T> KnolusFunctionBuilder<T>.setFunction(parameterName: String, func: suspend (context: KnolusContext, parameter: VariableValue) -> T): KnolusFunctionBuilder<T> {
+fun <T> KnolusFunctionBuilder<T>.setFunction(parameterName: String, func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> T): KnolusFunctionBuilder<T> {
     addParameter(parameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val param = parameters.getValue(parameterName.sanitiseFunctionIdentifier())
 
         func(context, param)
     }
 }
 
-fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterName: String, func: suspend (context: KnolusContext, parameter: VariableValue) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterName: String, func: suspend (context: KnolusContext, parameter: KnolusTypedValue) -> Unit): KnolusFunctionBuilder<T?> {
     addParameter(parameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val param = parameters.getValue(parameterName.sanitiseFunctionIdentifier())
 
         func(context, param)
@@ -59,7 +62,7 @@ fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterName: String
 fun <T, P> KnolusFunctionBuilder<T>.setFunction(parameterSpec: ParameterSpec<P>, func: suspend (context: KnolusContext, parameter: P) -> T): KnolusFunctionBuilder<T> {
     addParameter(parameterSpec.name)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val param = parameters.getValue(context, parameterSpec)
 
         func(context, param)
@@ -69,7 +72,7 @@ fun <T, P> KnolusFunctionBuilder<T>.setFunction(parameterSpec: ParameterSpec<P>,
 fun <T, P> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterSpec: ParameterSpec<P>, func: suspend (context: KnolusContext, parameter: P) -> Unit): KnolusFunctionBuilder<T?> {
     addParameter(parameterSpec.name)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val param = parameters.getValue(context, parameterSpec)
 
         func(context, param)
@@ -78,11 +81,11 @@ fun <T, P> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(parameterSpec: Par
     }
 }
 
-fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondParameterName: String, func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue) -> T): KnolusFunctionBuilder<T> {
+fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondParameterName: String, func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> T): KnolusFunctionBuilder<T> {
     addParameter(firstParameterName)
     addParameter(secondParameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(firstParameterName.sanitiseFunctionIdentifier())
         val secondParam = parameters.getValue(secondParameterName.sanitiseFunctionIdentifier())
 
@@ -90,11 +93,11 @@ fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondP
     }
 }
 
-fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterName: String, secondParameterName: String, func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterName: String, secondParameterName: String, func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue) -> Unit): KnolusFunctionBuilder<T?> {
     addParameter(firstParameterName)
     addParameter(secondParameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(firstParameterName.sanitiseFunctionIdentifier())
         val secondParam = parameters.getValue(secondParameterName.sanitiseFunctionIdentifier())
 
@@ -108,7 +111,7 @@ fun <T, P1, P2> KnolusFunctionBuilder<T>.setFunction(firstParameterSpec: Paramet
     addParameter(firstParameterSpec.name)
     addParameter(secondParameterSpec.name)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(context, firstParameterSpec)
         val secondParam = parameters.getValue(context, secondParameterSpec)
 
@@ -120,7 +123,7 @@ fun <T, P1, P2> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParamete
     addParameter(firstParameterSpec.name)
     addParameter(secondParameterSpec.name)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(context, firstParameterSpec)
         val secondParam = parameters.getValue(context, secondParameterSpec)
 
@@ -130,12 +133,12 @@ fun <T, P1, P2> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParamete
     }
 }
 
-fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondParameterName: String, thirdParameterName: String, func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue, thirdParameter: VariableValue) -> T): KnolusFunctionBuilder<T> {
+fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondParameterName: String, thirdParameterName: String, func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> T): KnolusFunctionBuilder<T> {
     addParameter(firstParameterName)
     addParameter(secondParameterName)
     addParameter(thirdParameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(firstParameterName.sanitiseFunctionIdentifier())
         val secondParam = parameters.getValue(secondParameterName.sanitiseFunctionIdentifier())
         val thirdParam = parameters.getValue(thirdParameterName.sanitiseFunctionIdentifier())
@@ -144,12 +147,12 @@ fun <T> KnolusFunctionBuilder<T>.setFunction(firstParameterName: String, secondP
     }
 }
 
-fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterName: String, secondParameterName: String, thirdParameterName: String, func: suspend (context: KnolusContext, firstParameter: VariableValue, secondParameter: VariableValue, thirdParameter: VariableValue) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstParameterName: String, secondParameterName: String, thirdParameterName: String, func: suspend (context: KnolusContext, firstParameter: KnolusTypedValue, secondParameter: KnolusTypedValue, thirdParameter: KnolusTypedValue) -> Unit): KnolusFunctionBuilder<T?> {
     addParameter(firstParameterName)
     addParameter(secondParameterName)
     addParameter(thirdParameterName)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(firstParameterName.sanitiseFunctionIdentifier())
         val secondParam = parameters.getValue(secondParameterName.sanitiseFunctionIdentifier())
         val thirdParam = parameters.getValue(thirdParameterName.sanitiseFunctionIdentifier())
@@ -165,7 +168,7 @@ fun <T, P1, P2, P3> KnolusFunctionBuilder<T>.setFunction(firstParameterSpec: Par
     addParameter(secondParameterSpec)
     addParameter(thirdParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(context, firstParameterSpec)
         val secondParam = parameters.getValue(context, secondParameterSpec)
         val thirdParam = parameters.getValue(context, thirdParameterSpec)
@@ -179,7 +182,7 @@ fun <T, P1, P2, P3> KnolusFunctionBuilder<T?>.setFunctionWithoutReturn(firstPara
     addParameter(secondParameterSpec)
     addParameter(thirdParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, VariableValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val firstParam = parameters.getValue(context, firstParameterSpec)
         val secondParam = parameters.getValue(context, secondParameterSpec)
         val thirdParam = parameters.getValue(context, thirdParameterSpec)

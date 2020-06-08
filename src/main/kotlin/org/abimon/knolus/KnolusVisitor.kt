@@ -1,12 +1,11 @@
 package org.abimon.knolus
 
 import org.abimon.antlr.knolus.KnolusLexer
-import org.abimon.antlr.knolus.KnolusLexer.ARRAY_SEPARATOR
 import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.antlr.knolus.KnolusParserBaseVisitor
+import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.ConsoleErrorListener
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -38,14 +37,24 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
             .map { variableValue ->
                 KnolusUnion.DeclareVariableAction(
                     ctx.variableName.text,
-                    variableValue,
+                    variableValue.value,
                     ctx.GLOBAL() != null
                 )
             }
 
-    override fun visitVariableValue(ctx: KnolusParser.VariableValueContext?): KnolusResult<out VariableValue> {
+    override fun visitSetVariableValue(ctx: KnolusParser.SetVariableValueContext): KnolusResult<out KnolusUnion> =
+        visitVariableValue(ctx.variableValue())
+            .map { variableValue ->
+                KnolusUnion.AssignVariableAction(
+                    ctx.variableName.text,
+                    variableValue.value,
+                    ctx.GLOBAL() != null
+                )
+            }
+
+    override fun visitVariableValue(ctx: KnolusParser.VariableValueContext?): KnolusResult<out KnolusUnion.VariableValue<out KnolusTypedValue>> {
         if (ctx == null) return KnolusResult.Empty()
-        if (ctx.NULL() != null) return KnolusResult.unionVariable(VariableValue.NullType)
+        if (ctx.NULL() != null) return KnolusResult.knolusValue(KnolusConstants.Null)
 
         ctx.quotedCharacter()?.let { return visitQuotedCharacter(it) }
         ctx.quotedString()?.let { return visitQuotedString(it) }
@@ -62,15 +71,15 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
             "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
-    override fun visitBool(ctx: KnolusParser.BoolContext): KnolusResult<VariableValue.BooleanType> {
-        if (ctx.TRUE() != null) return KnolusResult.unionVariable(VariableValue.BooleanType.TRUE)
-        if (ctx.FALSE() != null) return KnolusResult.unionVariable(VariableValue.BooleanType.FALSE)
+    override fun visitBool(ctx: KnolusParser.BoolContext): KnolusResult<KnolusUnion.VariableValue<KnolusBoolean>> {
+        if (ctx.TRUE() != null) return KnolusResult.knolusValue(KnolusBoolean(true))
+        if (ctx.FALSE() != null) return KnolusResult.knolusValue(KnolusBoolean(false))
 
         return KnolusResult.Error(NO_VALID_VARIABLE_VALUE,
             "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
-    override fun visitQuotedString(ctx: KnolusParser.QuotedStringContext): KnolusResult<VariableValue.StringComponents> {
+    override fun visitQuotedString(ctx: KnolusParser.QuotedStringContext): KnolusResult<KnolusUnion.VariableValue<KnolusLazyString>> {
         val components: MutableList<KnolusUnion.StringComponent> = ArrayList()
         val builder = StringBuilder()
 
@@ -108,13 +117,14 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
         }
 
         if (builder.isNotEmpty()) components.add(KnolusUnion.StringComponent.RawText(builder.toString()))
-
-        return KnolusResult.unionVariable(VariableValue.StringComponents(components.toTypedArray()))
+        val lazyComponents = components.toTypedArray()
+        val lazyStr = KnolusLazyString(lazyComponents)
+        return KnolusResult.knolusLazyString(lazyStr)
     }
 
-    override fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KnolusResult<VariableValue.CharType> {
+    override fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KnolusResult<KnolusUnion.VariableValue<KnolusChar>> {
         ctx.CHARACTER_ESCAPES()?.let { node ->
-            return KnolusResult.unionCharVariable(when (val c = node.text[1]) {
+            return KnolusResult.knolusCharValue(when (val c = node.text[1]) {
                 'b' -> '\b'
                 'f' -> '\u000C'
                 'n' -> '\n'
@@ -125,92 +135,96 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
             })
         }
 
-        ctx.QUOTED_CHARACTERS()?.let { node -> return KnolusResult.unionCharVariable(node.text[0]) }
-        ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KnolusResult.unionCharVariable('\n') }
+        ctx.QUOTED_CHARACTERS()?.let { node -> return KnolusResult.knolusCharValue(node.text[0]) }
+        ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KnolusResult.knolusCharValue('\n') }
 
         return KnolusResult.Error(NO_VALID_CHAR_VALUE,
             "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
-    override fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KnolusResult<VariableValue.VariableReferenceType> =
-        KnolusResult.unionVariable(VariableValue.VariableReferenceType(ctx.variableName.text.removePrefix("$")))
+    override fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KnolusResult<KnolusUnion.VariableValue<KnolusVariableReference>> =
+        KnolusResult.knolusValue(KnolusVariableReference(ctx.variableName.text.removePrefix("$")))
 
-    override fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KnolusResult<VariableValue.MemberVariableReferenceType> =
-        KnolusResult.unionVariable(VariableValue.MemberVariableReferenceType(ctx.memberName.text.removeSuffix("."),
-            ctx.variableReference().variableName.text))
+    override fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KnolusResult<KnolusUnion.VariableValue<KnolusPropertyReference>> =
+        KnolusResult.knolusValue(KnolusPropertyReference(
+            ctx.memberName.text.removeSuffix("."),
+            ctx.variableReference().variableName.text
+        ))
 
-    override fun visitFunctionCall(ctx: KnolusParser.FunctionCallContext): KnolusResult<VariableValue.FunctionCallType> {
+    override fun visitFunctionCall(ctx: KnolusParser.FunctionCallContext): KnolusResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>> {
         val functionName = ctx.functionName.text.removeSuffix("(")
         val parameters = ctx.parameters
             .map(this::visitFunctionCallParameter)
             .mapNotNull(KnolusResult<KnolusUnion.FunctionParameterType>::getOrNull)
 
-        return KnolusResult.unionVariable(
-            VariableValue.FunctionCallType(functionName, parameters.toTypedArray())
+        return KnolusResult.knolusLazy(
+            KnolusLazyFunctionCall(functionName, parameters.toTypedArray())
         )
     }
 
-    override fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KnolusResult<VariableValue.MemberFunctionCallType> =
+    override fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KnolusResult<KnolusUnion.VariableValue<KnolusLazyMemberFunctionCall>> =
         visitFunctionCall(ctx.functionCall()).flatMap { functionCallType ->
             val memberName = ctx.memberName.text.removeSuffix(".")
-            KnolusResult.unionVariable(VariableValue.MemberFunctionCallType(memberName,
-                functionCallType.name,
-                functionCallType.parameters))
+            KnolusResult.knolusLazy(KnolusLazyMemberFunctionCall(
+                memberName,
+                functionCallType.value.name,
+                functionCallType.value.parameters
+            ))
         }
 
     override fun visitFunctionCallParameter(ctx: KnolusParser.FunctionCallParameterContext): KnolusResult<KnolusUnion.FunctionParameterType> =
-        visitVariableValue(ctx.variableValue())
-            .flatMap { value ->
-                KnolusResult.union(KnolusUnion.FunctionParameterType(ctx.parameterName?.text?.removeSuffix("="), value))
-            }
+        visitVariableValue(ctx.variableValue()).flatMap { value ->
+            KnolusResult.union(
+                KnolusUnion.FunctionParameterType(ctx.parameterName?.text?.removeSuffix("="), value.value)
+            )
+        }
 
-    override fun visitNumber(ctx: KnolusParser.NumberContext): KnolusResult<VariableValue> {
+    override fun visitNumber(ctx: KnolusParser.NumberContext): KnolusResult<KnolusUnion.VariableValue<KnolusNumericalType>> {
         ctx.wholeNumber()?.INTEGER()?.let { node ->
             val int = node.text.toIntOrNullBaseN() ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR,
                 "${node.text} was not a valid int string")
-            return KnolusResult.unionVariable(VariableValue.IntegerType(int))
+            return KnolusResult.knolusValue(KnolusInt(int))
         }
 
         ctx.decimalNumber()?.DECIMAL_NUMBER()?.let { node ->
             val double = node.text.toDoubleOrNull() ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR,
                 "${node.text} was not a valid double string")
-            return KnolusResult.unionVariable(VariableValue.DecimalType(double))
+            return KnolusResult.knolusValue(KnolusDouble(double))
         }
 
         return KnolusResult.Error(NO_VALID_NUMBER_TYPE,
             "No valid number type in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
-    override fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KnolusResult<VariableValue.IntegerType> {
+    override fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KnolusResult<KnolusUnion.VariableValue<KnolusInt>> {
         val int = ctx.INTEGER().text.toIntOrNullBaseN() ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR,
             "${ctx.INTEGER().text} was not a valid int string")
-        return KnolusResult.unionVariable(VariableValue.IntegerType(int))
+        return KnolusResult.knolusValue(KnolusInt(int))
     }
 
-    override fun visitDecimalNumber(ctx: KnolusParser.DecimalNumberContext): KnolusResult<VariableValue.DecimalType> {
+    override fun visitDecimalNumber(ctx: KnolusParser.DecimalNumberContext): KnolusResult<KnolusUnion.VariableValue<KnolusDouble>> {
         val double = ctx.DECIMAL_NUMBER().text.toDoubleOrNull() ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR,
             "${ctx.DECIMAL_NUMBER().text} was not a valid double string")
-        return KnolusResult.unionVariable(VariableValue.DecimalType(double))
+        return KnolusResult.knolusValue(KnolusDouble(double))
     }
 
-    override fun visitExpression(ctx: KnolusParser.ExpressionContext): KnolusResult<VariableValue.ExpressionType> {
+    override fun visitExpression(ctx: KnolusParser.ExpressionContext): KnolusResult<KnolusUnion.VariableValue<KnolusLazyExpression>> {
         val starting = visitVariableValue(ctx.startingValue)
-        val ops: MutableList<Pair<ExpressionOperation, VariableValue>> = ArrayList()
+        val ops: MutableList<Pair<ExpressionOperator, KnolusTypedValue>> = ArrayList()
 
         repeat(ctx.exprOps.size) { i ->
             val expr = visitExpressionOperation(ctx.exprOps[i]).doOnFailure { return@repeat }
             val value = visitVariableValue(ctx.exprVals[i]).doOnFailure { return@repeat }
 
-            ops.add(Pair(expr, value))
+            ops.add(Pair(expr, value.value))
         }
 
         return starting.flatMap { startingValue ->
-            KnolusResult.unionVariable(VariableValue.ExpressionType(startingValue,
-                ops.toTypedArray()))
+            KnolusResult.knolusValue(KnolusLazyExpression(startingValue.value, ops.toTypedArray()))
         }
     }
 
-    override fun visitExpressionOperation(ctx: KnolusParser.ExpressionOperationContext): KnolusResult<ExpressionOperation> {
+    override fun visitExpressionOperation(ctx: KnolusParser.ExpressionOperationContext): KnolusResult<ExpressionOperator> {
         if (ctx.EXPR_EXPONENTIAL() != null) return KnolusResult.unionExprExponential()
 
         if (ctx.EXPR_PLUS() != null) return KnolusResult.unionExprPlus()
@@ -222,18 +236,18 @@ class KnolusVisitor(val parser: KnolusParser) : KnolusParserBaseVisitor<KnolusRe
             "No valid expression operation in \"${ctx.text}\" (${ctx.toString(parser)})")
     }
 
-    override fun visitArray(ctx: KnolusParser.ArrayContext): KnolusResult<VariableValue.ArrayType<out VariableValue>> =
+    override fun visitArray(ctx: KnolusParser.ArrayContext): KnolusResult<KnolusUnion.VariableValue<KnolusArray<out KnolusTypedValue>>> =
         visitArrayContents(ctx.arrayContents())
 
-    override fun visitArrayContents(ctx: KnolusParser.ArrayContentsContext): KnolusResult<VariableValue.ArrayType<out VariableValue>> =
-        ctx.children.fold<ParseTree, KnolusResult<MutableList<VariableValue>>>(KnolusResult.Success(ArrayList())) { acc, child ->
+    override fun visitArrayContents(ctx: KnolusParser.ArrayContentsContext): KnolusResult<KnolusUnion.VariableValue<KnolusArray<out KnolusTypedValue>>> =
+        ctx.children.fold<ParseTree, KnolusResult<MutableList<KnolusTypedValue>>>(KnolusResult.Success(ArrayList())) { acc, child ->
             acc.flatMapOrSelf { list ->
-                visit(child)?.filterToInstance<VariableValue>()?.map { union ->
-                    list.add(union)
+                visit(child)?.filterToInstance<KnolusUnion.VariableValue<KnolusTypedValue>>()?.map { union ->
+                    list.add(union.value)
                     list
                 }
             }
-        }.map { list -> VariableValue.ArrayType(list.toTypedArray()) }
+        }.map { list -> KnolusUnion.VariableValue.Stable(KnolusArray.of(list.toTypedArray())) }
 }
 
 @Suppress("UnnecessaryVariable")
