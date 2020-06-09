@@ -272,3 +272,61 @@ fun parseKnolusScope(text: String): KnolusResult<KnolusUnion.ScopeType> {
         return KnolusResult.Thrown(pce)
     }
 }
+
+sealed class ScopeResult {
+    data class Returned<T: KnolusTypedValue>(val value: T) : ScopeResult()
+    data class LineMap(val lines: Array<Pair<KnolusUnion, KnolusResult<*>>>) : ScopeResult() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as LineMap
+
+            if (!lines.contentEquals(other.lines)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return lines.contentHashCode()
+        }
+    }
+}
+
+@ExperimentalUnsignedTypes
+suspend fun KnolusUnion.ScopeType.run(
+    parentContext: KnolusContext,
+    parameters: Map<String, Any?> = emptyMap(),
+    init: KnolusContext.() -> Unit = {},
+) = run(parentContext.restrictions, parentContext, parameters, init)
+
+suspend fun KnolusUnion.ScopeType.run(
+    restrictions: KnolusRestrictions,
+    parentContext: KnolusContext? = null,
+    parameters: Map<String, Any?> = emptyMap(),
+    init: KnolusContext.() -> Unit = {},
+) = runDirect(KnolusContext(parentContext, restrictions), parameters, init)
+
+@ExperimentalUnsignedTypes
+suspend fun KnolusUnion.ScopeType.runDirect(
+    knolusContext: KnolusContext,
+    parameters: Map<String, Any?> = emptyMap(),
+    init: KnolusContext.() -> Unit = {},
+): ScopeResult {
+    parameters.forEach { (k, v) -> knolusContext[k] = v as? KnolusTypedValue ?: return@forEach }
+
+    knolusContext.init()
+
+    return ScopeResult.LineMap(lines.mapWith { union ->
+        when (union) {
+            is KnolusUnion.Action<*> -> union.run(knolusContext)
+            is KnolusUnion.VariableValue<*> ->
+                if (union.value is KnolusUnion.Action<*>)
+                    (union.value as KnolusUnion.Action<*>).run(knolusContext)
+                else
+                    KnolusResult.Empty()
+            is KnolusUnion.ReturnStatement -> return ScopeResult.Returned(union.value.evaluateOrSelf(knolusContext))
+            else -> KnolusResult.Empty()
+        }
+    })
+}

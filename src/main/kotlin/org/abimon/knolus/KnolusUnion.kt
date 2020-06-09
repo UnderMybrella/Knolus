@@ -3,11 +3,12 @@ package org.abimon.knolus
 import org.abimon.knolus.types.KnolusConstants
 import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
+import kotlin.properties.Delegates
 
 @ExperimentalUnsignedTypes
 sealed class KnolusUnion {
-    interface Action {
-        suspend fun run(context: KnolusContext)
+    interface Action<T> {
+        suspend fun run(context: KnolusContext): KnolusResult<T>
     }
 
     sealed class StringComponent : KnolusUnion() {
@@ -21,9 +22,11 @@ sealed class KnolusUnion {
     }
 
     data class ScopeType(val lines: Array<KnolusUnion>) : KnolusUnion()
-    class FunctionParameterType private constructor(val name: String?, val parameter: KnolusTypedValue) : KnolusUnion() {
+    class FunctionParameterType private constructor(val name: String?, val parameter: KnolusTypedValue) :
+        KnolusUnion() {
         companion object {
-            operator fun invoke(name: String?, parameter: KnolusTypedValue) = FunctionParameterType(name?.sanitiseFunctionIdentifier(), parameter)
+            operator fun invoke(name: String?, parameter: KnolusTypedValue) =
+                FunctionParameterType(name?.sanitiseFunctionIdentifier(), parameter)
         }
 
         operator fun component1() = name
@@ -40,6 +43,7 @@ sealed class KnolusUnion {
 
             return true
         }
+
         override fun hashCode(): Int {
             var result = name?.hashCode() ?: 0
             result = 31 * result + parameter.hashCode()
@@ -58,14 +62,29 @@ sealed class KnolusUnion {
 
     data class DeclareVariableAction(
         val variableName: String,
-        val variableValue: KnolusTypedValue?,
+        private val initialVariableValue: KnolusTypedValue?,
         val global: Boolean = false,
-    ) : KnolusUnion(), Action {
-        override suspend fun run(context: KnolusContext) {
-            if (variableValue is KnolusTypedValue.UnsureValue && variableValue.needsEvaluation(context))
-                context[variableName, global] = variableValue.evaluate(context)
-            else
-                context[variableName, global] = variableValue ?: KnolusConstants.Undefined
+    ) : KnolusUnion(), Action<KnolusTypedValue?> {
+        override suspend fun run(context: KnolusContext): KnolusResult<KnolusTypedValue?> {
+            if (initialVariableValue is KnolusTypedValue.UnsureValue && initialVariableValue.needsEvaluation(context)) {
+                val evaluated = initialVariableValue.evaluate(context)
+                val result = context.set(variableName, global, evaluated)
+                if (result is KnolusResult.Successful)
+                    return KnolusResult.Success(evaluated)
+                return KnolusResult.Error(
+                    KnolusContext.FAILED_TO_SET_VARIABLE,
+                    "Failed to set variable $variableName with value $evaluated",
+                    result
+                )
+            } else {
+                val result = context.set(variableName, global, initialVariableValue ?: KnolusConstants.Undefined)
+                if (result is KnolusResult.Successful)
+                    return KnolusResult.Success(initialVariableValue)
+                return KnolusResult.Error(
+                    KnolusContext.FAILED_TO_SET_VARIABLE,
+                    "Failed to set variable $variableName with value $initialVariableValue"
+                )
+            }
         }
     }
 
@@ -73,15 +92,16 @@ sealed class KnolusUnion {
         val variableName: String,
         val variableValue: KnolusTypedValue,
         val global: Boolean = false,
-    ) : KnolusUnion(), Action {
-        override suspend fun run(context: KnolusContext) {
+    ) : KnolusUnion(), Action<KnolusTypedValue?> {
+        override suspend fun run(context: KnolusContext): KnolusResult<KnolusTypedValue?> {
             if (variableName in context) {
-                if (variableValue is KnolusTypedValue.UnsureValue && variableValue.needsEvaluation(context))
-                    context[variableName, global] = variableValue.evaluate(context)
-                else
-                    context[variableName, global] = variableValue
+                if (variableValue is KnolusTypedValue.UnsureValue && variableValue.needsEvaluation(context)) {
+                    return context.set(variableName, global, variableValue.evaluate(context))
+                } else {
+                    return context.set(variableName, global, variableValue)
+                }
             } else {
-                println("Undeclared variable!!")
+                return KnolusResult.Error(KnolusContext.UNDECLARED_VARIABLE, "Undeclared variable $variableName")
             }
         }
     }
@@ -93,18 +113,26 @@ sealed class KnolusUnion {
         val parameterNames: Array<String>,
         val global: Boolean = false,
         val body: ScopeType?,
-    ) : KnolusUnion(), Action {
-        fun asPipelineFunction(): KnolusFunction<KnolusTypedValue?> = KnolusFunction(
-            Array(parameterNames.size) { KnolusDeclaredFunctionParameter.Concrete(parameterNames[it], KnolusObject, KnolusFunctionParameterMissingPolicy.Mandatory) },
-            func = this::invoke
-        )
-
-        suspend operator fun invoke(context: KnolusContext, parameters: Map<String, Any?>): KnolusTypedValue? =
-            body?.run(context, parameters)
-
-        override suspend fun run(context: KnolusContext) {
-            context.register(functionName, asPipelineFunction(), global)
+    ) : KnolusUnion(), Action<Array<KnolusFunction<KnolusTypedValue?>>> {
+        val pipelineFunction: KnolusFunction<KnolusTypedValue?> by lazy {
+            KnolusFunction(
+                Array(parameterNames.size) {
+                    KnolusDeclaredFunctionParameter.Concrete(parameterNames[it],
+                        KnolusObject,
+                        KnolusFunctionParameterMissingPolicy.Mandatory)
+                },
+                func = this::invoke
+            )
         }
+
+        //TODO: Make sure this is actually invoked after restrictions are checked
+        suspend operator fun invoke(
+            context: KnolusContext,
+            parameters: Map<String, KnolusTypedValue>,
+        ): KnolusTypedValue? = (body?.runDirect(context, parameters) as? ScopeResult.Returned<*>)?.value
+
+        override suspend fun run(context: KnolusContext): KnolusResult<Array<KnolusFunction<KnolusTypedValue?>>> =
+            context.register(functionName, pipelineFunction, global)
     }
 }
 

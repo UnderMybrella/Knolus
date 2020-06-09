@@ -104,6 +104,13 @@ inline fun String.toFormattedBoolean(): Boolean {
     return (toIntOrNullBaseN() ?: 0) != 0
 }
 
+public inline fun <T, R> Array<out T>.mapWith(transform: (T) -> R): Array<Pair<T, R>> = mapWith(::Pair, transform)
+public inline fun <T, R, reified P> Array<out T>.mapWith(zip: (T, R) -> P, transform: (T) -> R): Array<P> =
+    Array(size) { i ->
+        val element = get(i)
+        zip(element, transform(element))
+    }
+
 //public suspend inline fun KnolusType.fullyFlattened(context: KnolusContext): KnolusType {
 //    var lastResult: KnolusType
 //    var flattened: KnolusType = this

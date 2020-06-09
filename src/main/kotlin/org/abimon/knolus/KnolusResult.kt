@@ -7,6 +7,8 @@ import org.abimon.knolus.types.KnolusTypedValue
 interface KnolusResult<T> {
     @Suppress("UNCHECKED_CAST")
     companion object {
+        inline fun <T> empty(): KnolusResult<T> = Empty()
+
         fun <T: KnolusTypedValue.RuntimeValue> knolusLazy(value: T): KnolusResult<KnolusUnion.VariableValue<T>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Lazy(value))
 
         @ExperimentalUnsignedTypes
@@ -52,7 +54,7 @@ interface KnolusResult<T> {
             "Success(value=$value)"
     }
 
-    class Empty<T> : KnolusResult<T> {
+    class Empty<T>(): KnolusResult<T> {
         override fun get(): T = throw IllegalStateException("Result is empty")
         override fun component1(): T? = null
 

@@ -3,6 +3,7 @@ package org.abimon.knolus.types
 import org.abimon.knolus.ExpressionOperator
 import org.abimon.knolus.KnolusContext
 import org.abimon.knolus.KnolusUnion
+import org.abimon.knolus.getOrElse
 
 data class KnolusLazyExpression(
     val startValue: KnolusTypedValue,
@@ -63,11 +64,13 @@ data class KnolusLazyExpression(
 
                     val second = pair.second
 
-                    val result = context.invokeOperator(pair.first, first, second) ?: KnolusConstants.Undefined
-                    if (op == null) value = result
-                    else if (remainingOps.isEmpty()) value =
-                        context.invokeOperator(op, value, result) ?: KnolusConstants.Undefined
-                    else remainingOps.add(Pair(op, result))
+                    val result = context.invokeOperator(pair.first, first, second).getOrElse(KnolusConstants.Undefined)
+                    if (op == null)
+                        value = result
+                    else if (remainingOps.isEmpty())
+                        value = context.invokeOperator(op, value, result).getOrElse(KnolusConstants.Undefined)
+                    else
+                        remainingOps.add(Pair(op, result))
                 }
             }
         }
