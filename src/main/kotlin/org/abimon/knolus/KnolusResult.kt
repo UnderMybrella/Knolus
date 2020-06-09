@@ -4,9 +4,10 @@ import org.abimon.knolus.types.KnolusChar
 import org.abimon.knolus.types.KnolusLazyString
 import org.abimon.knolus.types.KnolusTypedValue
 
-interface KnolusResult<T> {
+interface KnolusResult<out T> {
     @Suppress("UNCHECKED_CAST")
     companion object {
+        inline fun <T> success(value: T): KnolusResult<T> = Success(value)
         inline fun <T> empty(): KnolusResult<T> = Empty()
 
         fun <T: KnolusTypedValue.RuntimeValue> knolusLazy(value: T): KnolusResult<KnolusUnion.VariableValue<T>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Lazy(value))

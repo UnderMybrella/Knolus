@@ -4,7 +4,7 @@ import org.abimon.knolus.types.KnolusTypedValue
 
 @ExperimentalUnsignedTypes
 interface KnolusRestrictions {
-    object Permissible : KnolusRestrictions {
+    object Permissive : KnolusRestrictions {
         override fun canGetVariable(context: KnolusContext, variableName: String): Boolean = true
         override fun canAskParentForVariable(
             child: KnolusContext,

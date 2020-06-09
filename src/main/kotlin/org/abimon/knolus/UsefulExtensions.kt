@@ -121,3 +121,11 @@ public inline fun <T, R, reified P> Array<out T>.mapWith(zip: (T, R) -> P, trans
 //
 //    return flattened
 //}
+
+inline fun <T> T?.switchIfNull(other: T): T = this ?: other
+inline fun <T> T?.switchIfNull(other: () -> T): T = this ?: other()
+
+inline fun <T, C: MutableList<T>> C.withElement(t: T): C {
+    add(t)
+    return this
+}

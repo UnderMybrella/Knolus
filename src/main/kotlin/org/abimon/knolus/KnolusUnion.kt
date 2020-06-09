@@ -16,12 +16,44 @@ sealed class KnolusUnion {
         data class VariableReference(val variableName: String) : StringComponent()
     }
 
-    sealed class VariableValue<T : KnolusTypedValue>(open val value: T) : KnolusUnion() {
+    sealed class VariableValue<out T : KnolusTypedValue>(open val value: T) : KnolusUnion() {
         data class Lazy<T : KnolusTypedValue.RuntimeValue>(override val value: T) : VariableValue<T>(value)
         data class Stable<T : KnolusTypedValue>(override val value: T) : VariableValue<T>(value)
     }
+    data class ArrayContents(val inner: Array<KnolusTypedValue>): KnolusUnion() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
 
-    data class ScopeType(val lines: Array<KnolusUnion>) : KnolusUnion()
+            other as ArrayContents
+
+            if (!inner.contentEquals(other.inner)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return inner.contentHashCode()
+        }
+    }
+
+    data class ScopeType(val lines: Array<KnolusUnion>) : KnolusUnion() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as ScopeType
+
+            if (!lines.contentEquals(other.lines)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return lines.contentHashCode()
+        }
+    }
+
     class FunctionParameterType private constructor(val name: String?, val parameter: KnolusTypedValue) :
         KnolusUnion() {
         companion object {
@@ -62,7 +94,7 @@ sealed class KnolusUnion {
 
     data class DeclareVariableAction(
         val variableName: String,
-        private val initialVariableValue: KnolusTypedValue?,
+        private val initialVariableValue: KnolusTypedValue,
         val global: Boolean = false,
     ) : KnolusUnion(), Action<KnolusTypedValue?> {
         override suspend fun run(context: KnolusContext): KnolusResult<KnolusTypedValue?> {
@@ -77,7 +109,7 @@ sealed class KnolusUnion {
                     result
                 )
             } else {
-                val result = context.set(variableName, global, initialVariableValue ?: KnolusConstants.Undefined)
+                val result = context.set(variableName, global, initialVariableValue)
                 if (result is KnolusResult.Successful)
                     return KnolusResult.Success(initialVariableValue)
                 return KnolusResult.Error(
