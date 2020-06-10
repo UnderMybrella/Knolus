@@ -1,5 +1,6 @@
-package org.abimon.knolus
+package org.abimon.knolus.restrictions
 
+import org.abimon.knolus.*
 import org.abimon.knolus.types.KnolusTypedValue
 
 @ExperimentalUnsignedTypes

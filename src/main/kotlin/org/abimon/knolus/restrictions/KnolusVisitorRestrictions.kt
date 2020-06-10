@@ -1,6 +1,8 @@
-package org.abimon.knolus
+package org.abimon.knolus.restrictions
 
 import org.abimon.antlr.knolus.KnolusParser
+import org.abimon.knolus.ExpressionOperator
+import org.abimon.knolus.KnolusUnion
 import org.abimon.knolus.types.*
 
 interface KnolusVisitorRestrictions {

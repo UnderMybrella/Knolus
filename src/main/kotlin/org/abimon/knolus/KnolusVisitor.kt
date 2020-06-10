@@ -3,6 +3,8 @@ package org.abimon.knolus
 import org.abimon.antlr.knolus.KnolusLexer
 import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.antlr.knolus.KnolusParserBaseVisitor
+import org.abimon.knolus.restrictions.KnolusRestrictions
+import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream

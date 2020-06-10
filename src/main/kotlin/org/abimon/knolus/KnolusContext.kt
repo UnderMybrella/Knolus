@@ -4,6 +4,9 @@ package org.abimon.knolus
 
 import org.abimon.knolus.modules.functionregistry.functionBuilder
 import org.abimon.knolus.modules.functionregistry.setFunction
+import org.abimon.knolus.restrictions.KnolusRestrictions
+import org.abimon.knolus.restrictions.canAskAsParentForFunction
+import org.abimon.knolus.restrictions.canAskAsParentForVariable
 import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.misc.Utils
@@ -52,6 +55,8 @@ open class KnolusContext(val parent: KnolusContext?, val restrictions: KnolusRes
         const val FAILED_TO_REGISTER_FUNCTION = 0x1102
 //        const val
     }
+
+    val recursionLevel: Int by lazy { if (parent == null) 0 else parent.recursionLevel + 1 }
 
     protected val variableRegistry: MutableMap<String, KnolusTypedValue> = HashMap()
     protected val functionRegistry: MutableMap<String, MutableList<KnolusFunction<KnolusTypedValue?>>> =
