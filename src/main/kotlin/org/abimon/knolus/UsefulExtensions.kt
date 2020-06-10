@@ -165,3 +165,5 @@ fun toStringTree(t: Tree, ruleNames: List<String?>?, indent: Int = 0): String? {
 //    buf.append(")")
     return buf.toString()
 }
+
+inline fun <reified T> asNull(): T? = null

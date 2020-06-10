@@ -164,7 +164,24 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
 
     suspend fun invokeFunction(
         functionName: String,
+        vararg parameters: Pair<String, KnolusTypedValue>,
+    ): KnolusResult<KnolusTypedValue> =
+        invokeFunction(functionName, parameters.mapToArray { (k, v) ->
+            KnolusUnion.FunctionParameterType(k, v)
+        })
+
+    suspend fun invokeFunction(
+        functionName: String,
+        vararg parameters: KnolusTypedValue,
+    ): KnolusResult<KnolusTypedValue> =
+        invokeFunction(functionName, parameters.mapToArray { param ->
+            KnolusUnion.FunctionParameterType(null, param)
+        })
+
+    suspend fun invokeFunction(
+        functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
+        selfContext: KnolusContext = this
     ): KnolusResult<KnolusTypedValue> {
         if (!restrictions.canAskForFunction(this, functionName, functionParameters))
             return KnolusResult.Error(ACCESS_DENIED,
@@ -205,7 +222,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
                 }
             }
 
-            val result = invokeFunction(function, passedParams)
+            val result = selfContext.invokeFunction(function, passedParams)
             if (result is KnolusResult.Successful) return result
             causedBy = result.mapRootCausedBy { causedBy }
 //
@@ -222,7 +239,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         }
 
         if (parent?.canAskAsParentForFunction(this, functionName, functionParameters) == true)
-            return parent.invokeFunction(functionName, functionParameters)
+            return parent.invokeFunction(functionName, functionParameters, selfContext)
 
         if (causedBy != null)
             return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)

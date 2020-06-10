@@ -9,6 +9,11 @@ interface KnolusResult<out T> {
     companion object {
         inline fun <T> success(value: T): KnolusResult<T> = Success(value)
         inline fun <T> empty(): KnolusResult<T> = Empty()
+        inline fun <T> error(resultCode: Int, message: String): KnolusResult<T> =
+            Error<T, Unit>(resultCode, message, IllegalArgumentException(message, null), null)
+
+        inline fun <T, R> error(resultCode: Int, message: String, causedBy: KnolusResult<R>?): KnolusResult<T> =
+            Error(resultCode, message, IllegalArgumentException(message, (causedBy as? Thrown<*, *, *>)?.error), causedBy)
 
         fun <T: KnolusTypedValue.RuntimeValue> knolusLazy(value: T): KnolusResult<KnolusUnion.VariableValue<T>> = KnolusTypedSuccess(KnolusUnion.VariableValue.Lazy(value))
 
@@ -71,40 +76,46 @@ interface KnolusResult<out T> {
             "UnknownImpl(impl=$impl)"
     }
 
-    class Error<T, R>(val errorCode: Int, val errorMessage: String, val causedBy: KnolusResult<R>?) : KnolusResult<T> {
-        companion object {
-            operator fun <T> invoke(resultCode: Int, message: String): Error<T, Unit> =
-                Error(resultCode, message, null)
-        }
-
-        operator fun component2(): Int = errorCode
-        operator fun component3(): String = errorMessage
-        operator fun component4(): KnolusResult<R>? = causedBy
-
-        override fun get(): T = throw IllegalStateException("Result is errored", asIllegalArgumentException())
-
-        override fun toString(): String =
-            "Error(errorCode=$errorCode, errorMessage='$errorMessage', causedBy=$causedBy)"
-
-        fun asIllegalArgumentException(): IllegalArgumentException =
-            IllegalArgumentException(errorMessage, (causedBy as? Error<R, *>)?.asIllegalArgumentException())
-
-        override fun component1(): T? = null
+    abstract class WithCause<T, R>(val causedBy: KnolusResult<R>?): KnolusResult<T> {
+        abstract infix fun <N> withCause(newCause: KnolusResult<N>?): WithCause<T, N>
     }
-
-    class Thrown<T, E : Throwable, R>(val error: E, val causedBy: KnolusResult<R>?) : KnolusResult<T> {
+    open class Thrown<T, E : Throwable, R>(val error: E, causedBy: KnolusResult<R>?) : WithCause<T, R>(causedBy) {
         companion object {
             operator fun <T, E : Throwable> invoke(error: E): Thrown<T, E, Unit> =
                 Thrown(error, null)
         }
 
-        operator fun component2(): E = error
-        operator fun component3(): KnolusResult<R>? = causedBy
+        override fun component1(): T? = null
+//        operator fun component2(): E = error
+//        operator fun component3(): KnolusResult<R>? = causedBy
 
         override fun get(): T = throw error
-        override fun component1(): T? = null
         override fun toString(): String =
             "Thrown(error=$error, causedBy=$causedBy)"
+
+        override fun <N> withCause(newCause: KnolusResult<N>?): WithCause<T, N> = Thrown(error, newCause)
+    }
+
+    class Error<T, R>(val errorCode: Int, val errorMessage: String, error: IllegalArgumentException, causedBy: KnolusResult<R>?) : Thrown<T, IllegalArgumentException, R>(error, causedBy) {
+        companion object {
+            inline operator fun <T> invoke(resultCode: Int, message: String): Error<T, Unit> =
+                Error(resultCode, message, IllegalArgumentException(message, null), null)
+
+            inline operator fun <T, R> invoke(resultCode: Int, message: String, causedBy: KnolusResult<R>?): Error<T, R> =
+                Error(resultCode, message, IllegalArgumentException(message, (causedBy as? Thrown<*, *, *>)?.error), causedBy)
+        }
+
+        override fun component1(): T? = null
+        operator fun component2(): Int = errorCode
+        operator fun component3(): String = errorMessage
+//        operator fun component4(): KnolusResult<R>? = causedBy
+
+//        override fun get(): T = throw IllegalStateException("Result is errored", error)
+
+        override fun toString(): String =
+            "Error(errorCode=$errorCode, errorMessage='$errorMessage', causedBy=$causedBy)"
+
+        override fun <N> withCause(newCause: KnolusResult<N>?): WithCause<T, N> = Error(errorCode, errorMessage, error, newCause)
     }
 
     abstract fun get(): T
@@ -146,13 +157,24 @@ private inline class KnolusTypedSuccess<T: KnolusTypedValue>(override val value:
 
 /** Extension methods */
 
+inline fun KnolusResult<*>.hierarchy(): List<KnolusResult<*>> = ArrayList<KnolusResult<*>>().apply(this::hierarchy)
+inline fun KnolusResult<*>.hierarchy(list: MutableList<KnolusResult<*>>) {
+    var self: KnolusResult<*>? = this
+    while (self is KnolusResult.WithCause<*, *>) {
+        list.add(self)
+        self = self.causedBy
+    }
+
+    self?.let(list::add)
+}
+
 @Suppress("UNCHECKED_CAST")
 inline fun <reified R> KnolusResult<*>.cast(): KnolusResult<R> =
     when (this) {
         is KnolusResult.Successful -> if (value is R) this as KnolusResult<R> else KnolusResult.Empty()
         is KnolusResult.Empty -> KnolusResult.Empty()
         is KnolusResult.UnknownImpl -> KnolusResult.UnknownImpl(toString())
-        is KnolusResult.Error<*, *> -> KnolusResult.Error(errorCode, errorMessage, causedBy)
+        is KnolusResult.Error<*, *> -> KnolusResult.error(errorCode, errorMessage, causedBy)
         is KnolusResult.Thrown<*, *, *> -> KnolusResult.Thrown(error, causedBy)
         else -> KnolusResult.UnknownImpl(toString())
     }
@@ -160,14 +182,15 @@ inline fun <reified R> KnolusResult<*>.cast(): KnolusResult<R> =
 inline fun <T, reified R> KnolusResult<T>.map(transform: (T) -> R): KnolusResult<R> =
     if (this is KnolusResult.Successful) KnolusResult.Success(transform(value)) else cast()
 
-inline fun <T> KnolusResult<T>.mapCausedBy(transform: (KnolusResult<Any?>?) -> KnolusResult<Any?>?): KnolusResult<T> =
-    if (this is KnolusResult.Error<T, *>) KnolusResult.Error(errorCode, errorMessage, transform(this.causedBy)) else this
+inline fun <T> KnolusResult<T>.mapCausedBy(transform: (KnolusResult<*>?) -> KnolusResult<*>?): KnolusResult<T> =
+    if (this is KnolusResult.WithCause<T, *>) this withCause transform(causedBy) else this
 
-fun <T> KnolusResult<T>.mapRootCausedBy(transform: (KnolusResult<Any?>?) -> KnolusResult<Any?>?): KnolusResult<T> =
-    if (this is KnolusResult.Error<T, *>) {
-        if (causedBy == null) KnolusResult.Error(errorCode, errorMessage, transform(null))
-        else KnolusResult.Error(errorCode, errorMessage, causedBy.mapRootCausedBy(transform))
-    } else this
+@Suppress("UNCHECKED_CAST")
+inline fun <T> KnolusResult<T>.mapRootCausedBy(transform: (KnolusResult<Any?>?) -> KnolusResult<Any?>?): KnolusResult<T> =
+    hierarchy().foldRight(asNull<KnolusResult<*>>()) { causedBy, result ->
+        if (result is KnolusResult.WithCause<*, *>) result withCause causedBy
+        else this
+    } as? KnolusResult<T> ?: this
 
 inline fun <T, reified R> KnolusResult<T>.flatMap(transform: (T) -> KnolusResult<R>): KnolusResult<R> =
     if (this is KnolusResult.Successful<T>) transform(value) else cast()
