@@ -1,19 +1,26 @@
 package org.abimon.knolus.restrictions
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
 @ExperimentalUnsignedTypes
-class CompoundKnolusRestriction(val startingRestriction: KnolusRestrictions, val restrictions: List<KnolusRestrictions>) :
+class CompoundKnolusRestriction(
+    val startingRestriction: KnolusRestrictions,
+    val restrictions: List<KnolusRestrictions>,
+) :
     KnolusRestrictions {
     companion object {
         fun of(vararg restrictions: KnolusRestrictions) =
             CompoundKnolusRestriction(restrictions[0],
                 restrictions.drop(1))
+
+        fun fromPermissive(vararg restrictions: KnolusRestrictions) =
+            CompoundKnolusRestriction(KnolusBasePermissiveRestrictions.INSTANCE, restrictions.toList())
     }
 
-    constructor(restrictions: List<KnolusRestrictions>): this(restrictions[0], restrictions.drop(1))
-    constructor(restrictions: Array<KnolusRestrictions>): this(restrictions[0], restrictions.drop(1))
+    constructor(restrictions: List<KnolusRestrictions>) : this(restrictions[0], restrictions.drop(1))
+    constructor(restrictions: Array<KnolusRestrictions>) : this(restrictions[0], restrictions.drop(1))
 
     override fun canGetVariable(context: KnolusContext, variableName: String): Boolean =
         restrictions.fold(startingRestriction.canGetVariable(context, variableName)) { acc, r ->
@@ -41,7 +48,7 @@ class CompoundKnolusRestriction(val startingRestriction: KnolusRestrictions, val
         context: KnolusContext,
         functionName: String,
         function: KnolusFunction<T>,
-        attemptedParentalRegister: KnolusResult<Array<KnolusFunction<KnolusTypedValue?>>>?,
+        attemptedParentalRegister: KnolusResult<KnolusFunction<KnolusTypedValue?>>?,
     ): Boolean = restrictions.fold(startingRestriction.canRegisterFunction(context,
         functionName,
         function,
@@ -126,7 +133,9 @@ class CompoundKnolusRestriction(val startingRestriction: KnolusRestrictions, val
         function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KnolusRestrictions =
-        restrictions.fold(mutableListOf(startingRestriction.createSubroutineRestrictions(currentContext, function, parameters))) { acc, r ->
+        restrictions.fold(mutableListOf(startingRestriction.createSubroutineRestrictions(currentContext,
+            function,
+            parameters))) { acc, r ->
             acc.withElement(r.createSubroutineRestrictions(currentContext, function, parameters))
         }.let { list ->
             CompoundKnolusRestriction(list.toTypedArray())

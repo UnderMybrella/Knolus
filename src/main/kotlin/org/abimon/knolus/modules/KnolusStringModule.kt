@@ -1,11 +1,9 @@
 package org.abimon.knolus.modules
 
 import org.abimon.knolus.*
-import org.abimon.knolus.modules.functionregistry.functionBuilder
-import org.abimon.knolus.modules.functionregistry.registerFunction
-import org.abimon.knolus.modules.functionregistry.registerMemberFunction
+import org.abimon.knolus.context.KnolusContext
+import org.abimon.knolus.modules.functionregistry.*
 import org.abimon.knolus.types.KnolusInt
-import org.abimon.knolus.types.KnolusNumericalType
 import org.abimon.knolus.types.KnolusString
 import kotlin.math.log
 

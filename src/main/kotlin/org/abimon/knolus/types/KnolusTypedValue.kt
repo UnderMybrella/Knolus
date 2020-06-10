@@ -1,6 +1,7 @@
 package org.abimon.knolus.types
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 
 interface KnolusTypedValue {
     interface TypeInfo<T> {

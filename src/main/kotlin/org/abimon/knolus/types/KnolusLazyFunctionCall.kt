@@ -1,6 +1,7 @@
 package org.abimon.knolus.types
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 
 @ExperimentalUnsignedTypes
 data class KnolusLazyFunctionCall(val name: String, val parameters: Array<KnolusUnion.FunctionParameterType>) :

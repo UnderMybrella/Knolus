@@ -3,6 +3,8 @@ package org.abimon.knolus
 import org.abimon.antlr.knolus.KnolusLexer
 import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.antlr.knolus.KnolusParserBaseVisitor
+import org.abimon.knolus.context.KnolusContext
+import org.abimon.knolus.context.KnolusScopeContext
 import org.abimon.knolus.restrictions.KnolusRestrictions
 import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
@@ -494,7 +496,7 @@ suspend fun KnolusUnion.ScopeType.run(
     parentContext: KnolusContext? = null,
     parameters: Map<String, Any?> = emptyMap(),
     init: KnolusContext.() -> Unit = {},
-) = runDirect(KnolusContext(parentContext, restrictions), parameters, init)
+) = runDirect(KnolusScopeContext(this, parentContext, restrictions), parameters, init)
 
 @ExperimentalUnsignedTypes
 suspend fun KnolusUnion.ScopeType.runDirect(

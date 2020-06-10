@@ -1,5 +1,6 @@
 package org.abimon.knolus
 
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
 

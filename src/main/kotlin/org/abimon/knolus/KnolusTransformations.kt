@@ -2,6 +2,7 @@
 
 package org.abimon.knolus
 
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.*
 import kotlin.math.floor
 import kotlin.math.log

@@ -1,6 +1,6 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusContext
+import org.abimon.knolus.context.KnolusContext
 
 /**
  * A reference to a variable defined by either the environment, or the user.

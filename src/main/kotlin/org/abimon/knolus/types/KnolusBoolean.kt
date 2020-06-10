@@ -1,6 +1,6 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusContext
+import org.abimon.knolus.context.KnolusContext
 
 data class KnolusBoolean(val boolean: Boolean) : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean> {

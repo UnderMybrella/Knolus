@@ -1,6 +1,7 @@
 package org.abimon.knolus.types
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 
 data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>): KnolusTypedValue.RuntimeValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusLazyString> {

@@ -1,6 +1,7 @@
 package org.abimon.knolus.modules.functionregistry
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
 fun <P> KnolusContext.registerMultiFunction(

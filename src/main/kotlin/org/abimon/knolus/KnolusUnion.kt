@@ -1,9 +1,8 @@
 package org.abimon.knolus
 
-import org.abimon.knolus.types.KnolusConstants
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
-import kotlin.properties.Delegates
 
 @ExperimentalUnsignedTypes
 sealed class KnolusUnion {
@@ -145,7 +144,7 @@ sealed class KnolusUnion {
         val parameterNames: Array<String>,
         val global: Boolean = false,
         val body: ScopeType?,
-    ) : KnolusUnion(), Action<Array<KnolusFunction<KnolusTypedValue?>>> {
+    ) : KnolusUnion(), Action<KnolusFunction<KnolusTypedValue?>> {
         val pipelineFunction: KnolusFunction<KnolusTypedValue?> by lazy {
             KnolusFunction(
                 Array(parameterNames.size) {
@@ -163,7 +162,7 @@ sealed class KnolusUnion {
             parameters: Map<String, KnolusTypedValue>,
         ): KnolusTypedValue? = (body?.runDirect(context, parameters) as? ScopeResult.Returned<*>)?.value
 
-        override suspend fun run(context: KnolusContext): KnolusResult<Array<KnolusFunction<KnolusTypedValue?>>> =
+        override suspend fun run(context: KnolusContext): KnolusResult<KnolusFunction<KnolusTypedValue?>> =
             context.register(functionName, pipelineFunction, global)
     }
 }

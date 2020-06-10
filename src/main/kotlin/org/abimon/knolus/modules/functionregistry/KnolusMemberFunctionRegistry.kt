@@ -1,8 +1,8 @@
 package org.abimon.knolus.modules.functionregistry
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
-import kotlin.collections.getValue
 
 fun <T, P0> KnolusFunctionBuilder<T>.setMemberFunction(typeSpec: ParameterSpec<*, P0>, func: suspend (context: KnolusContext, self: P0) -> T): KnolusFunctionBuilder<T> {
     addParameter(typeSpec)

@@ -1,6 +1,6 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusContext
+import org.abimon.knolus.context.KnolusContext
 
 interface KnolusNumericalType : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusNumericalType> {

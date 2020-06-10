@@ -1,6 +1,6 @@
 package org.abimon.knolus.modules.functionregistry
 
-import org.abimon.knolus.KnolusContext
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.ParameterSpec
 import org.abimon.knolus.types.KnolusTypedValue
 

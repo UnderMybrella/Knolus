@@ -1,8 +1,7 @@
 package org.abimon.knolus.types
 
 import org.abimon.knolus.ExpressionOperator
-import org.abimon.knolus.KnolusContext
-import org.abimon.knolus.KnolusUnion
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.getOrElse
 
 data class KnolusLazyExpression(

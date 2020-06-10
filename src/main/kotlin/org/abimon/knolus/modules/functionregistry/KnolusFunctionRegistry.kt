@@ -1,6 +1,7 @@
 package org.abimon.knolus.modules.functionregistry
 
 import org.abimon.knolus.*
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
 inline fun functionBuilder() = KnolusFunctionBuilder<KnolusTypedValue?>()
@@ -188,3 +189,45 @@ fun <P1, P2, P3> KnolusContext.registerFunctionWithoutReturn(
         .setFunctionWithoutReturn(firstParameterSpec, secondParameterSpec, thirdParameterSpec, func)
         .build()
 )
+
+
+/** Getter */
+
+fun <P0> KnolusContext.registerMemberPropertyGetter(
+    typeSpec: ParameterSpec<*, P0>,
+    propertyName: String,
+    func: suspend (context: KnolusContext, self: P0) -> KnolusTypedValue,
+) = register(
+    typeSpec.getMemberPropertyGetterName(propertyName),
+    functionBuilder()
+        .setFunction(typeSpec, func)
+        .build()
+)
+
+/** Operator */
+
+fun <P0, P1> KnolusContext.registerOperatorFunction(
+    typeSpec: ParameterSpec<*, P0>,
+    operator: ExpressionOperator,
+    parameterSpec: ParameterSpec<*, P1>,
+    func: suspend (context: KnolusContext, a: P0, b: P1) -> KnolusTypedValue,
+) = register(
+    typeSpec.getMemberOperatorName(operator),
+    functionBuilder()
+        .setOperatorFunction(typeSpec, parameterSpec, func)
+        .build()
+)
+
+fun <P0, P1> KnolusContext.registerMultiOperatorFunction(
+    typeSpec: ParameterSpec<*, P0>,
+    operator: ExpressionOperator,
+    parameterSpecs: Array<ParameterSpec<*, P1>>,
+    func: suspend (context: KnolusContext, a: P0, b: P1) -> KnolusTypedValue,
+) = parameterSpecs.forEach { parameterSpec ->
+    register(
+        typeSpec.getMemberOperatorName(operator),
+        functionBuilder()
+            .setOperatorFunction(typeSpec, parameterSpec, func)
+            .build()
+    )
+}

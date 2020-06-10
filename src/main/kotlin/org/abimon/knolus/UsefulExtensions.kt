@@ -1,6 +1,10 @@
 package org.abimon.knolus
 
 import org.abimon.knolus.types.*
+import org.antlr.v4.runtime.Parser
+import org.antlr.v4.runtime.misc.Utils
+import org.antlr.v4.runtime.tree.Tree
+import org.antlr.v4.runtime.tree.Trees
 
 fun Double.asReasonablePercentage(): Double =
     if (this >= -0.0001 && this <= 1.0001) this * 100.0 else this.coerceIn(0.0, 100.0)
@@ -128,4 +132,36 @@ inline fun <T> T?.switchIfNull(other: () -> T): T = this ?: other()
 inline fun <T, C: MutableList<T>> C.withElement(t: T): C {
     add(t)
     return this
+}
+
+internal val SEPARATOR_CHARACTERS = "[_\\- ]".toRegex()
+internal fun String.sanitiseFunctionIdentifier(): String = toUpperCase().replace(SEPARATOR_CHARACTERS, "")
+
+
+fun toStringTree(t: Tree, recog: Parser?): String? {
+    val ruleNames = recog?.ruleNames
+    val ruleNamesList = if (ruleNames != null) listOf(*ruleNames) else null
+    return toStringTree(t, ruleNamesList)
+}
+
+/** Print out a whole tree in LISP form. [.getNodeText] is used on the
+ * node payloads to get the text for the nodes.
+ */
+fun toStringTree(t: Tree, ruleNames: List<String?>?, indent: Int = 0): String? {
+    var s = Utils.escapeWhitespace(Trees.getNodeText(t, ruleNames), false)
+    if (t.childCount == 0) return s
+    val buf = StringBuilder()
+//    buf.append("(")
+    buf.appendln()
+    repeat(indent) { buf.append('\t') }
+    buf.append("> ")
+    s = Utils.escapeWhitespace(Trees.getNodeText(t, ruleNames), false)
+    buf.append(s)
+    buf.append(' ')
+    for (i in 0 until t.childCount) {
+        if (i > 0) buf.append(' ')
+        buf.append(toStringTree(t.getChild(i), ruleNames, indent + 1))
+    }
+//    buf.append(")")
+    return buf.toString()
 }

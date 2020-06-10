@@ -1,7 +1,6 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusContext
-import org.abimon.knolus.KnolusUnion
+import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.getOrElse
 
 data class KnolusPropertyReference(val variableName: String, val propertyName: String) : KnolusTypedValue.RuntimeValue {

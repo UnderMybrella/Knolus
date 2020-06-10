@@ -160,6 +160,15 @@ inline fun <reified R> KnolusResult<*>.cast(): KnolusResult<R> =
 inline fun <T, reified R> KnolusResult<T>.map(transform: (T) -> R): KnolusResult<R> =
     if (this is KnolusResult.Successful) KnolusResult.Success(transform(value)) else cast()
 
+inline fun <T> KnolusResult<T>.mapCausedBy(transform: (KnolusResult<Any?>?) -> KnolusResult<Any?>?): KnolusResult<T> =
+    if (this is KnolusResult.Error<T, *>) KnolusResult.Error(errorCode, errorMessage, transform(this.causedBy)) else this
+
+fun <T> KnolusResult<T>.mapRootCausedBy(transform: (KnolusResult<Any?>?) -> KnolusResult<Any?>?): KnolusResult<T> =
+    if (this is KnolusResult.Error<T, *>) {
+        if (causedBy == null) KnolusResult.Error(errorCode, errorMessage, transform(null))
+        else KnolusResult.Error(errorCode, errorMessage, causedBy.mapRootCausedBy(transform))
+    } else this
+
 inline fun <T, reified R> KnolusResult<T>.flatMap(transform: (T) -> KnolusResult<R>): KnolusResult<R> =
     if (this is KnolusResult.Successful<T>) transform(value) else cast()
 

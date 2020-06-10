@@ -4,80 +4,79 @@ import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
-@ExperimentalUnsignedTypes
-interface KnolusRestrictions {
-    fun canGetVariable(context: KnolusContext, variableName: String): Boolean
-    fun canAskParentForVariable(child: KnolusContext, parent: KnolusContext, variableName: String): Boolean
+interface KnolusBaseLockdownRestrictions : KnolusRestrictions {
+    object INSTANCE: KnolusBaseLockdownRestrictions
 
-    fun canSetVariable(
+    override fun canGetVariable(context: KnolusContext, variableName: String): Boolean = false
+    override fun canAskParentForVariable(
+        child: KnolusContext,
+        parent: KnolusContext,
+        variableName: String,
+    ): Boolean = false
+
+    override fun canSetVariable(
         context: KnolusContext,
         variableName: String,
         variableValue: KnolusTypedValue,
         attemptedParentalSet: Boolean,
-    ): Boolean
+    ): Boolean = false
 
-    fun <T> canRegisterFunction(
+    override fun <T> canRegisterFunction(
         context: KnolusContext,
         functionName: String,
         function: KnolusFunction<T>,
         attemptedParentalRegister: KnolusResult<KnolusFunction<KnolusTypedValue?>>?,
-    ): Boolean
+    ): Boolean = false
 
-    fun canAskForFunction(
+    override fun canAskForFunction(
         context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean
+    ): Boolean = false
 
-    fun canAskParentForFunction(
+    override fun canAskParentForFunction(
         child: KnolusContext,
         parent: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean
+    ): Boolean = false
 
-    fun canTryFunction(
+    override fun canTryFunction(
         context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
         function: KnolusFunction<KnolusTypedValue?>,
-    ): Boolean
+    ): Boolean = false
 
-    fun canRunFunction(
+    override fun canRunFunction(
         context: KnolusContext,
         function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
-    ): Boolean
+    ): Boolean = false
 
-    fun canAskForMemberFunction(
+    override fun canAskForMemberFunction(
         context: KnolusContext,
         member: KnolusTypedValue,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean
+    ): Boolean = false
 
-    fun canAskForMemberPropertyGetter(context: KnolusContext, member: KnolusTypedValue, propertyName: String): Boolean
-    fun canAskForOperatorFunction(
+    override fun canAskForMemberPropertyGetter(
+        context: KnolusContext,
+        member: KnolusTypedValue,
+        propertyName: String,
+    ): Boolean = false
+
+    override fun canAskForOperatorFunction(
         context: KnolusContext,
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
-    ): Boolean
+    ): Boolean = false
 
-    fun createSubroutineRestrictions(
+    override fun createSubroutineRestrictions(
         currentContext: KnolusContext,
         function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
-    ): KnolusRestrictions
+    ): KnolusRestrictions = this
 }
-
-@ExperimentalUnsignedTypes
-fun KnolusContext.canAskAsParentForVariable(child: KnolusContext, variableName: String): Boolean =
-    child.restrictions.canAskParentForVariable(child, this, variableName)
-
-@ExperimentalUnsignedTypes
-fun KnolusContext.canAskAsParentForFunction(
-    child: KnolusContext,
-    functionName: String,
-    functionParameters: Array<KnolusUnion.FunctionParameterType>,
-): Boolean = child.restrictions.canAskParentForFunction(child, this, functionName, functionParameters)
