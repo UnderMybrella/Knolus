@@ -4,21 +4,21 @@ import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
-fun <T, P0> KnolusFunctionBuilder<T>.setMemberFunction(typeSpec: ParameterSpec<*, P0>, func: suspend (context: KnolusContext, self: P0) -> T): KnolusFunctionBuilder<T> {
+fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (context: C, self: P0) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
 
         func(context, self)
     }
 }
 
-fun <T, P0> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0>, func: suspend (context: KnolusContext, self: P0) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T?, R, C>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (context: C, self: P0) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
 
         func(context, self)
 
@@ -26,25 +26,25 @@ fun <T, P0> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpec: P
     }
 }
 
-fun <T, P0, P1> KnolusFunctionBuilder<T>.setMemberFunction(typeSpec: ParameterSpec<*, P0>, parameterSpec: ParameterSpec<*, P1>, func: suspend (context: KnolusContext, self: P0, parameter: P1) -> T): KnolusFunctionBuilder<T> {
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: P1) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(parameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val param = parameters.getValue(context, parameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val param = parameters.getValue(context, parameterSpec).get()
 
         func(context, self, param)
     }
 }
 
-fun <T, P0, P1> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0>, parameterSpec: ParameterSpec<*, P1>, func: suspend (context: KnolusContext, self: P0, parameter: P1) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T?, R, C>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: P1) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(parameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val param = parameters.getValue(context, parameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val param = parameters.getValue(context, parameterSpec).get()
 
         func(context, self, param)
 
@@ -52,29 +52,29 @@ fun <T, P0, P1> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpe
     }
 }
 
-fun <T, P0, P1, P2> KnolusFunctionBuilder<T>.setMemberFunction(typeSpec: ParameterSpec<*, P0>, firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> T): KnolusFunctionBuilder<T> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val firstParam = parameters.getValue(context, firstParameterSpec)
-        val secondParam = parameters.getValue(context, secondParameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec).get()
+        val secondParam = parameters.getValue(context, secondParameterSpec).get()
 
         func(context, self, firstParam, secondParam)
     }
 }
 
-fun <T, P0, P1, P2> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0>, firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T?, R, C>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val firstParam = parameters.getValue(context, firstParameterSpec)
-        val secondParam = parameters.getValue(context, secondParameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec).get()
+        val secondParam = parameters.getValue(context, secondParameterSpec).get()
 
         func(context, self, firstParam, secondParam)
 
@@ -82,33 +82,33 @@ fun <T, P0, P1, P2> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typ
     }
 }
 
-fun <T, P0, P1, P2, P3> KnolusFunctionBuilder<T>.setMemberFunction(typeSpec: ParameterSpec<*, P0>, firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, thirdParameterSpec: ParameterSpec<*, P3>, func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> T): KnolusFunctionBuilder<T> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
     addParameter(thirdParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val firstParam = parameters.getValue(context, firstParameterSpec)
-        val secondParam = parameters.getValue(context, secondParameterSpec)
-        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec).get()
+        val secondParam = parameters.getValue(context, secondParameterSpec).get()
+        val thirdParam = parameters.getValue(context, thirdParameterSpec).get()
 
         func(context, self, firstParam, secondParam, thirdParam)
     }
 }
 
-fun <T, P0, P1, P2, P3> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0>, firstParameterSpec: ParameterSpec<*, P1>, secondParameterSpec: ParameterSpec<*, P2>, thirdParameterSpec: ParameterSpec<*, P3>, func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit): KnolusFunctionBuilder<T?> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T?, R, C>.setMemberFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
     addParameter(thirdParameterSpec)
 
-    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
-        val self = parameters.getValue(context, typeSpec)
-        val firstParam = parameters.getValue(context, firstParameterSpec)
-        val secondParam = parameters.getValue(context, secondParameterSpec)
-        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec).get()
+        val secondParam = parameters.getValue(context, secondParameterSpec).get()
+        val thirdParam = parameters.getValue(context, thirdParameterSpec).get()
 
         func(context, self, firstParam, secondParam, thirdParam)
 
@@ -116,74 +116,260 @@ fun <T, P0, P1, P2, P3> KnolusFunctionBuilder<T?>.setMemberFunctionWithoutReturn
     }
 }
 
-fun <P0> KnolusContext.registerMemberFunction(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0> KnolusContext<R>.registerMemberFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    func: suspend (context: KnolusContext, self: P0) -> KnolusTypedValue,
+    func: suspend (context: C, self: P0) -> KnolusTypedValue,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunction(typeSpec, func)
         .build()
 )
 
-fun <P0> KnolusContext.registerMemberFunctionWithoutReturn(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0> KnolusContext<R>.registerMemberFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    func: suspend (context: KnolusContext, self: P0) -> Unit,
+    func: suspend (context: C, self: P0) -> Unit,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunctionWithoutReturn(typeSpec, func)
         .build()
 )
 
-fun <P0, P1> KnolusContext.registerMemberFunction(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    parameterSpec: ParameterSpec<*, P1>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> KnolusTypedValue,
+    parameterSpec: ParameterSpec<*, P1, in R, C>,
+    func: suspend (context: C, self: P0, parameter: P1) -> KnolusTypedValue,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunction(typeSpec, parameterSpec, func)
         .build()
 )
 
-fun <P0, P1> KnolusContext.registerMemberFunctionWithoutReturn(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    parameterSpec: ParameterSpec<*, P1>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> Unit,
+    parameterSpec: ParameterSpec<*, P1, in R, C>,
+    func: suspend (context: C, self: P0, parameter: P1) -> Unit,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunctionWithoutReturn(typeSpec, parameterSpec, func)
         .build()
 )
 
-fun <P0, P1, P2> KnolusContext.registerMemberFunction(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    firstParameterSpec: ParameterSpec<*, P1>,
-    secondParameterSpec: ParameterSpec<*, P2>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
+    firstParameterSpec: ParameterSpec<*, P1, in R, C>,
+    secondParameterSpec: ParameterSpec<*, P2, in R, C>,
+    func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
 )
 
-fun <P0, P1, P2> KnolusContext.registerMemberFunctionWithoutReturn(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    firstParameterSpec: ParameterSpec<*, P1>,
-    secondParameterSpec: ParameterSpec<*, P2>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> Unit,
+    firstParameterSpec: ParameterSpec<*, P1, in R, C>,
+    secondParameterSpec: ParameterSpec<*, P2, in R, C>,
+    func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> Unit,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
-    functionBuilder()
+    functionBuilder<R, C>()
         .setMemberFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
+        .build()
+)
+
+/** Result Functions */
+
+fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (context: C, self: P0) -> T): KnolusFunctionBuilder<T, R, C> {
+    addParameter(typeSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+
+        func(context, self)
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (context: C, self: P0) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+    addParameter(typeSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+
+        func(context, self)
+
+        null
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> T): KnolusFunctionBuilder<T, R, C> {
+    addParameter(typeSpec)
+    addParameter(parameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val param = parameters.getValue(context, parameterSpec)
+
+        func(context, self, param)
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+    addParameter(typeSpec)
+    addParameter(parameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val param = parameters.getValue(context, parameterSpec)
+
+        func(context, self, param)
+
+        null
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> T): KnolusFunctionBuilder<T, R, C> {
+    addParameter(typeSpec)
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+
+        func(context, self, firstParam, secondParam)
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+    addParameter(typeSpec)
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+
+        func(context, self, firstParam, secondParam)
+
+        null
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> T): KnolusFunctionBuilder<T, R, C> {
+    addParameter(typeSpec)
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+    addParameter(thirdParameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+
+        func(context, self, firstParam, secondParam, thirdParam)
+    }
+}
+
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+    addParameter(typeSpec)
+    addParameter(firstParameterSpec)
+    addParameter(secondParameterSpec)
+    addParameter(thirdParameterSpec)
+
+    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+        val self = parameters.getValue(context, typeSpec).get()
+        val firstParam = parameters.getValue(context, firstParameterSpec)
+        val secondParam = parameters.getValue(context, secondParameterSpec)
+        val thirdParam = parameters.getValue(context, thirdParameterSpec)
+
+        func(context, self, firstParam, secondParam, thirdParam)
+
+        null
+    }
+}
+
+fun <R, C : KnolusContext<out R>, P0> KnolusContext<R>.registerMemberResultFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    func: suspend (context: C, self: P0) -> KnolusTypedValue,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunction(typeSpec, func)
+        .build()
+)
+
+fun <R, C : KnolusContext<out R>, P0> KnolusContext<R>.registerMemberResultFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    func: suspend (context: C, self: P0) -> Unit,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunctionWithoutReturn(typeSpec, func)
+        .build()
+)
+
+fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberResultFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    parameterSpec: ParameterSpec<*, P1, in R, C>,
+    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> KnolusTypedValue,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunction(typeSpec, parameterSpec, func)
+        .build()
+)
+
+fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberResultFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    parameterSpec: ParameterSpec<*, P1, in R, C>,
+    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> Unit,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunctionWithoutReturn(typeSpec, parameterSpec, func)
+        .build()
+)
+
+fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberResultFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    firstParameterSpec: ParameterSpec<*, P1, in R, C>,
+    secondParameterSpec: ParameterSpec<*, P2, in R, C>,
+    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> KnolusTypedValue,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
+        .build()
+)
+
+fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberResultFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    firstParameterSpec: ParameterSpec<*, P1, in R, C>,
+    secondParameterSpec: ParameterSpec<*, P2, in R, C>,
+    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit,
+) = register(
+    typeSpec.getMemberFunctionName(functionName),
+    functionBuilder<R, C>()
+        .setMemberResultFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
         .build()
 )

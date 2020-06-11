@@ -9,13 +9,20 @@ import kotlin.math.log
 import kotlin.math.roundToInt
 
 @ExperimentalUnsignedTypes
-typealias KnolusTransform<V, T> = suspend V.(context: KnolusContext) -> T
+typealias KnolusTransform<V, T, C> = suspend V.(context: C) -> KnolusResult<T>
+typealias KnolusGenericTransform<V, T> = KnolusTransform<V, T, KnolusContext<in Any?>>
 
-sealed class ParameterSpec<V : KnolusTypedValue, T> {
+inline fun <V, T> asGenericTransform(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T): KnolusGenericTransform<V, T> = { t -> KnolusResult.success(lambda(t)) }
+inline fun <V, T> asGenericTransformOrNull(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T?): KnolusGenericTransform<V, T> = { t -> KnolusResult.successOrEmpty(lambda(t)) }
+
+inline fun <V, T, R, C: KnolusContext<in R>> asTransform(crossinline lambda: suspend V.(context: C) -> T): KnolusTransform<V, T, C> = { t -> KnolusResult.success(lambda(t)) }
+inline fun <V, T, R, C: KnolusContext<in R>> asTransformOrNull(crossinline lambda: suspend V.(context: C) -> T?): KnolusTransform<V, T, C> = { t -> KnolusResult.successOrEmpty(lambda(t)) }
+
+sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>> {
     abstract val name: String
     abstract val type: KnolusTypedValue.TypeInfo<V>
     abstract val default: T?
-    abstract val transformation: KnolusTransform<in V, T>
+    abstract val transformation: KnolusTransform<in V, T, C>
 
     fun getMemberFunctionName(functionName: String): String =
         type.getMemberFunctionName(type.typeName, functionName)
@@ -26,84 +33,74 @@ sealed class ParameterSpec<V : KnolusTypedValue, T> {
     fun getMemberOperatorName(operator: ExpressionOperator): String =
         type.getMemberOperatorName(type.typeName, operator)
 
-    abstract infix fun withName(name: String): ParameterSpec<V, T>
-    abstract infix fun withDefault(value: T?): ParameterSpec<V, T>
+    abstract infix fun withName(name: String): ParameterSpec<V, T, R, C>
+    abstract infix fun withDefault(value: T?): ParameterSpec<V, T, R, C>
 }
 
-data class RegularParameterSpec<V : KnolusTypedValue, T>(
+data class RegularParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>>(
     override val name: String,
     override val type: KnolusTypedValue.TypeInfo<V>,
     override val default: T?,
-    override val transformation: KnolusTransform<V, T>,
-) : ParameterSpec<V, T>() {
-    override fun withName(name: String): ParameterSpec<V, T> = copy(name = name.sanitiseFunctionIdentifier())
-    override fun withDefault(value: T?): ParameterSpec<V, T> = copy(default = value)
+    override val transformation: KnolusTransform<V, T, C>,
+) : ParameterSpec<V, T, R, C>() {
+    override fun withName(name: String): ParameterSpec<V, T, R, C> = copy(name = name.sanitiseFunctionIdentifier())
+    override fun withDefault(value: T?): ParameterSpec<V, T, R, C> = copy(default = value)
 }
 
-data class TypeParameterSpec<V : KnolusTypedValue, T>(
+data class TypeParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>>(
     override val type: KnolusTypedValue.TypeInfo<V>,
-    override val transformation: KnolusTransform<V, T>,
-) : ParameterSpec<V, T>() {
+    override val transformation: KnolusTransform<V, T, C>,
+) : ParameterSpec<V, T, R, C>() {
     override val name: String = "self"
     override val default: T? = null
 
-    override fun withName(name: String): ParameterSpec<V, T> = RegularParameterSpec(name, type, null, transformation)
-    override fun withDefault(value: T?): ParameterSpec<V, T> = RegularParameterSpec(name, type, value, transformation)
+    override fun withName(name: String): ParameterSpec<V, T, R, C> = RegularParameterSpec(name, type, null, transformation)
+    override fun withDefault(value: T?): ParameterSpec<V, T, R, C> = RegularParameterSpec(name, type, value, transformation)
 }
 
 @ExperimentalUnsignedTypes
 object KnolusTransformations {
-    val NONE: KnolusTransform<KnolusTypedValue, KnolusTypedValue> = { this }
-    val TO_STRING: KnolusTransform<KnolusTypedValue, String> = KnolusTypedValue::asString
-    val TO_BOOLEAN: KnolusTransform<KnolusTypedValue, Boolean> = KnolusTypedValue::asBoolean
-    val TO_NUMBER: KnolusTransform<KnolusTypedValue, Number> = KnolusTypedValue::asNumber
+    val NONE: KnolusGenericTransform<KnolusTypedValue, KnolusTypedValue> = { KnolusResult.knolusTyped(this) }
+    val TO_STRING: KnolusGenericTransform<KnolusTypedValue, String> = KnolusTypedValue::asString
+    val TO_BOOLEAN: KnolusGenericTransform<KnolusTypedValue, Boolean> = KnolusTypedValue::asBoolean
+    val TO_NUMBER: KnolusGenericTransform<KnolusTypedValue, Number> = KnolusTypedValue::asNumber
 
-    val TO_CHAR: KnolusTransform<KnolusTypedValue, Char> = { context ->
+    val TO_CHAR: KnolusGenericTransform<KnolusTypedValue, Char> = { context ->
         when (this) {
-            is KnolusString -> string.firstOrNull() ?: '\u0000'
-            is KnolusChar -> char
-            is KnolusNumericalType -> asNumber(context).toChar()
-            else -> asNumber(context).toChar()
+            is KnolusString -> if (string.isEmpty()) KnolusResult.empty() else KnolusResult.success(string.first())
+            is KnolusChar -> KnolusResult.success(char)
+            is KnolusNumericalType -> asNumber(context).flatMap { num -> KnolusResult.success(num.toChar()) }
+            else -> KnolusResult.empty()
         }
     }
-    val TO_INT: KnolusTransform<KnolusTypedValue, Int> = { asNumber(it).toInt() }
-    val TO_DOUBLE: KnolusTransform<KnolusTypedValue, Double> = { asNumber(it).toDouble() }
+    val TO_INT: KnolusGenericTransform<KnolusTypedValue, Int> = { asNumber(it).flatMap { num -> KnolusResult.success(num.toInt()) } }
+    val TO_DOUBLE: KnolusGenericTransform<KnolusTypedValue, Double> = { asNumber(it).flatMap { num -> KnolusResult.success(num.toDouble()) } }
 
-    val TO_CHAR_ARRAY: KnolusTransform<KnolusTypedValue, CharArray> = { context ->
+    val TO_CHAR_ARRAY: KnolusGenericTransform<KnolusTypedValue, CharArray> = { context ->
         when (this) {
-            is KnolusString -> string.toCharArray()
+            is KnolusString -> KnolusResult.success(string.toCharArray())
             is KnolusArray<*> -> {
                 when {
                     array.isArrayOf<KnolusChar>() -> {
                         val array = (array as Array<KnolusChar>)
-                        CharArray(array.size) { array[it].char }
+                        KnolusResult.success(CharArray(array.size) { array[it].char })
                     }
                     array.isArrayOf<KnolusInt>() -> {
                         val array = (array as Array<KnolusInt>)
-                        CharArray(array.size) { array[it].number.toChar() }
+                        KnolusResult.success(CharArray(array.size) { array[it].number.toChar() })
                     }
                     array.isArrayOf<KnolusDouble>() -> {
                         val array = (array as Array<KnolusDouble>)
-                        CharArray(array.size) { array[it].number.roundToInt().toChar() }
+                        KnolusResult.success(CharArray(array.size) { array[it].number.roundToInt().toChar() })
                     }
-                    array.isArrayOf<KnolusString>() -> (array as Array<KnolusString>).flatMap { str -> str.string.toList() }
-                        .toCharArray()
-                    else -> CharArray(array.size) { array[it].asNumber(context).toChar() }
+                    array.isArrayOf<KnolusString>() -> KnolusResult.success((array as Array<KnolusString>).flatMap { str -> str.string.toList() }.toCharArray())
+                    else -> KnolusResult.empty()
                 }
             }
-            is KnolusChar -> charArrayOf(char)
-            is KnolusConstants.Null -> charArrayOf()
-            is KnolusConstants.Undefined -> charArrayOf()
-            else -> charArrayOf(asNumber(context).toChar())
-        }
-    }
-    val TO_CHAR_OR_NULL: KnolusTransform<KnolusTypedValue, Char?> = { context ->
-        when (this) {
-            is KnolusString -> string.firstOrNull()
-            is KnolusChar -> char
-            is KnolusConstants.Null -> null
-            is KnolusConstants.Undefined -> null
-            else -> asNumber(context).toChar()
+            is KnolusChar -> KnolusResult.success(charArrayOf(char))
+            is KnolusConstants.Null -> KnolusResult.empty()
+            is KnolusConstants.Undefined -> KnolusResult.empty()
+            else -> KnolusResult.empty()
         }
     }
 
@@ -145,74 +142,86 @@ object KnolusTransformations {
 //    }
 
 
-    val LAZY_STRING_SELF: KnolusTransform<KnolusLazyString, KnolusLazyString> = { this }
-    val LAZY_STRING_TO_INNER: KnolusTransform<KnolusLazyString, Array<KnolusUnion.StringComponent>> = { components }
-    val LAZY_STRING_AS_STRING_ARRAY: KnolusTransform<KnolusLazyString, Array<String>> = { context ->
-        components.mapNotNull { component ->
-            when (component) {
-                is KnolusUnion.StringComponent.RawText -> component.text
-                is KnolusUnion.StringComponent.VariableReference -> context[component.variableName]?.asString(context)
+    val LAZY_STRING_SELF: KnolusGenericTransform<KnolusLazyString, KnolusLazyString> = { KnolusResult.knolusTyped(this) }
+    val LAZY_STRING_TO_INNER: KnolusGenericTransform<KnolusLazyString, Array<KnolusUnion.StringComponent>> = { KnolusResult.success(components) }
+    val LAZY_STRING_AS_STRING_ARRAY: KnolusGenericTransform<KnolusLazyString, Array<String>> = { context ->
+        val initial: KnolusResult<MutableList<String>> = KnolusResult.success(ArrayList())
+
+        components.fold(initial) { acc, component ->
+            acc.flatMapOrSelf { list ->
+                when (component) {
+                    is KnolusUnion.StringComponent.RawText ->
+                        KnolusResult.success(list.withElement(component.text))
+                    is KnolusUnion.StringComponent.VariableReference ->
+                        context[component.variableName].flatMap { value ->
+                            value.asString(context).map(list::withElement)
+                        }
+                }
             }
-        }.toTypedArray()
+        }.flatMap { list -> KnolusResult.success(list.toTypedArray()) }
     }
 
-    val VARIABLE_REFERENCE_SELF: KnolusTransform<KnolusVariableReference, KnolusVariableReference> = { this }
-    val VARIABLE_REFERENCE_TO_INNER: KnolusTransform<KnolusVariableReference, String> = { variableName }
+    val VARIABLE_REFERENCE_SELF: KnolusGenericTransform<KnolusVariableReference, KnolusVariableReference> = { KnolusResult.knolusTyped(this) }
+    val VARIABLE_REFERENCE_TO_INNER: KnolusGenericTransform<KnolusVariableReference, String> = { KnolusResult.success(variableName) }
 
     val MAX_HEX_STRING = String(CharArray((floor(log(Int.MAX_VALUE.toDouble(), 16.0)).toInt() shl 1) + 2) { '0' })
-    val NUMBER_TO_HEX_STRING: KnolusTransform<KnolusNumericalType, String> = {
-        val int = asNumber(it).toInt()
+    val NUMBER_TO_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> = {
+        asNumber(it).flatMap { num ->
+            val int = num.toInt()
 
-        buildString {
-            append("0x")
-            if (log(int.toDouble(), 16.0).toInt() and 1 == 0) append('0')
-            append(int.toString(16))
+            KnolusResult.success(buildString {
+                append("0x")
+                if (log(int.toDouble(), 16.0).toInt() and 1 == 0) append('0')
+                append(int.toString(16))
+            })
         }
     }
 
-    val NUMBER_TO_2_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(2) }
-    val NUMBER_TO_3_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(3) }
-    val NUMBER_TO_4_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(4) }
-    val NUMBER_TO_5_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(5) }
-    val NUMBER_TO_6_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(6) }
-    val NUMBER_TO_7_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(7) }
-    val NUMBER_TO_8_BYTE_HEX_STRING: KnolusTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(8) }
+    val NUMBER_TO_2_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(2) }
+    val NUMBER_TO_3_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(3) }
+    val NUMBER_TO_4_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(4) }
+    val NUMBER_TO_5_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(5) }
+    val NUMBER_TO_6_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(6) }
+    val NUMBER_TO_7_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(7) }
+    val NUMBER_TO_8_BYTE_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> by lazy { numberToByteHexString(8) }
 
-    fun numberToByteHexString(byteCount: Int): KnolusTransform<KnolusNumericalType, String> {
+    fun numberToByteHexString(byteCount: Int): KnolusGenericTransform<KnolusNumericalType, String> {
         val len = (byteCount shl 1)
         return {
             val int = number.toInt()
 
-            buildString {
+            KnolusResult.success(buildString {
                 append("0x")
                 append(MAX_HEX_STRING.slice(0 until (len - (log(int.toDouble(), 16.0).toInt()))))
                 append(int.toString(16))
-            }
+            })
         }
     }
 }
 
 //inline fun <reified T: KnolusTypedValue.TypeInfo<*>, R> typeParameterFor(noinline transformation: KnolusTransform<R>): TypeParameterSpec<R> = TypeParameterSpec(T::class.objectInstance!!, transformation)
 
-fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.operatorSpecWith(
-    transformation: KnolusTransform<V, T>,
-) = TypeParameterSpec(this, transformation)
+fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.operatorSpecWith(
+    transformation: KnolusTransform<V, T, C>,
+) = TypeParameterSpec<V, T, R, C>(this, transformation)
 
-fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(
+fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(
     name: String,
     default: T? = null,
-    transformation: KnolusTransform<V, T>,
-) = RegularParameterSpec(name, this, default, transformation)
+    transformation: KnolusTransform<V, T, C>,
+) = RegularParameterSpec<V, T, R, C>(name, this, default, transformation)
 
-fun <V : KnolusTypedValue, T> KnolusTypedValue.TypeInfo<V>.typeSpecWith(
+fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.typeSpecWith(
     name: String? = null,
     default: T? = null,
-    transformation: KnolusTransform<V, T>,
+    transformation: KnolusTransform<V, T, C>,
 ) =
-    if (name == null) TypeParameterSpec(this, transformation) else RegularParameterSpec(name,
+    if (name == null) TypeParameterSpec(this, transformation) else RegularParameterSpec(
+        name,
         this,
         default,
-        transformation)
+        transformation
+    )
 
 fun objectTypeParameter(name: String? = null, default: KnolusTypedValue? = null) =
     KnolusObject.typeSpecWith(name, default, KnolusTransformations.NONE)
@@ -303,21 +312,23 @@ fun nullTypeAsStringParameter(name: String? = null, default: String? = null) =
 fun undefinedTypeAsStringParameter(name: String? = null, default: String? = null) =
     KnolusConstants.Undefined.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
-suspend fun <V : KnolusTypedValue, T> ParameterSpec<V, T>.transform(context: KnolusContext, value: V): T =
+suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> ParameterSpec<V, T, R, C>.transform(context: C, value: V): KnolusResult<T> =
     transformation(value, context)
 
-suspend fun <V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(
-    context: KnolusContext,
-    spec: ParameterSpec<V, T>,
-): T {
-    val value = (get(spec.name.sanitiseFunctionIdentifier())?: return spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory")) as V
-    return spec.transform(context, value)
+suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(
+    context: C,
+    spec: ParameterSpec<V, T, R, C>,
+): KnolusResult<T> {
+    val value = get(spec.name.sanitiseFunctionIdentifier())
+                ?: return KnolusResult.success(spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory"))
+
+    return spec.transform(context, value as V)
 }
 
-suspend fun <V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
-    context: KnolusContext,
-    spec: ParameterSpec<V, T>,
-): T? {
-    val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return spec.default
+suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
+    context: C,
+    spec: ParameterSpec<V, T, R, C>,
+): KnolusResult<T> {
+    val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return KnolusResult.successOrEmpty(spec.default)
     return spec.transform(context, value)
 }

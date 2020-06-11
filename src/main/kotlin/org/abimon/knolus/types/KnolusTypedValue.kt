@@ -16,29 +16,31 @@ interface KnolusTypedValue {
         fun isInstance(value: KnolusTypedValue): Boolean
     }
 
-    interface UnsureValue: KnolusTypedValue {
-        suspend fun needsEvaluation(context: KnolusContext): Boolean
-        suspend fun evaluate(context: KnolusContext): KnolusTypedValue
+    interface UnsureValue<out E: KnolusTypedValue>: KnolusTypedValue {
+        suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean
+        suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<E>
     }
-    interface RuntimeValue: UnsureValue {
-        override suspend fun needsEvaluation(context: KnolusContext): Boolean = true
+    interface RuntimeValue<out E: KnolusTypedValue>: UnsureValue<E> {
+        override suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean = true
+
+        override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = evaluate(context).flatMap { it.asString(context) }
+        override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
+        override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
     }
 
     //Generics work to go from TypeInfo -> TypedValue, not so much the other way around
     val typeInfo: TypeInfo<*>
 
-    suspend fun asString(context: KnolusContext): String
-    suspend fun asNumber(context: KnolusContext): Number
-    suspend fun asBoolean(context: KnolusContext): Boolean
-
+    suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String>
+    suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number>
+    suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean>
 }
 
 fun KnolusTypedValue.TypeInfo<*>.getMemberPropertyGetterNames(propertyName: String): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberPropertyGetterName(typeName, propertyName) }
 fun KnolusTypedValue.TypeInfo<*>.getMemberFunctionNames(functionName: String): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberFunctionName(typeName, functionName) }
 fun KnolusTypedValue.TypeInfo<*>.getMemberOperatorNames(operator: ExpressionOperator): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberOperatorName(typeName, operator) }
 
-suspend fun KnolusTypedValue.evaluateOrSelf(context: KnolusContext): KnolusTypedValue = when (this) {
+suspend fun <T, E : KnolusTypedValue> KnolusTypedValue.UnsureValue<E> .evaluateOrSelf(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> = when (this) {
     is KnolusTypedValue.RuntimeValue -> evaluate(context)
-    is KnolusTypedValue.UnsureValue -> if (needsEvaluation(context)) evaluate(context) else this
-    else -> this
+    else -> if (needsEvaluation(context)) evaluate(context) else KnolusResult.knolusTyped(this)
 }

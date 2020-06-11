@@ -1,8 +1,10 @@
 package org.abimon.knolus.types
 
+import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.toFormattedBoolean
 import org.abimon.knolus.toIntBaseN
+import org.abimon.knolus.toIntOrNullBaseN
 
 inline class KnolusString(val string: String) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusString> {
@@ -14,9 +16,9 @@ inline class KnolusString(val string: String) : KnolusTypedValue {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>
         get() = TypeInfo
 
-    override suspend fun asString(context: KnolusContext): String = string
-    override suspend fun asNumber(context: KnolusContext): Number =
-        if (string.contains('.')) string.toDouble() else string.toIntBaseN()
+    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = KnolusResult.success(string)
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> =
+        if (string.contains('.')) KnolusResult.successOrEmpty(string.toDoubleOrNull()) else KnolusResult.successOrEmpty(string.toIntOrNullBaseN())
 
-    override suspend fun asBoolean(context: KnolusContext): Boolean = string.toFormattedBoolean()
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = KnolusResult.success(string.toFormattedBoolean())
 }

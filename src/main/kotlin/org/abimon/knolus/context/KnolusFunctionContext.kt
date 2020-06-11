@@ -1,13 +1,14 @@
 package org.abimon.knolus.context
 
 import org.abimon.knolus.KnolusFunction
-import org.abimon.knolus.restrictions.KnolusRestrictions
+import org.abimon.knolus.restrictions.KnolusRestriction
 
-class KnolusFunctionContext<T>(
-    val function: KnolusFunction<T>,
-    parent: KnolusContext?,
-    restrictions: KnolusRestrictions,
-) : KnolusContext(parent, restrictions) {
-    override fun <T> countFunctionRecursion(func: KnolusFunction<T>): Int =
-        if (func === function) 1 + super.countFunctionRecursion(func) else super.countFunctionRecursion(func)
+@ExperimentalUnsignedTypes
+class KnolusFunctionContext<T, R, C: KnolusContext<out R>>(
+    val function: KnolusFunction<T, R, C>,
+    parent: KnolusContext<R>?,
+    restrictions: KnolusRestriction<R>,
+) : KnolusContext<R>(parent, restrictions) {
+    override fun recursiveCountFor(func: KnolusFunction<*, R, *>): Int =
+        if (func === function) 1 + super.recursiveCountFor(func) else super.recursiveCountFor(func)
 }

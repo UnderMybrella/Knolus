@@ -5,7 +5,7 @@ import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.antlr.knolus.KnolusParserBaseVisitor
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.context.KnolusScopeContext
-import org.abimon.knolus.restrictions.KnolusRestrictions
+import org.abimon.knolus.restrictions.KnolusRestriction
 import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
 import org.antlr.v4.runtime.CharStreams
@@ -93,7 +93,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(VARIABLE_DECL_VISIT_DENIED, "Restriction denied variable declaration visit")
 
         return ctx.variableValue()?.let(this::visitVariableValue)
-            .switchIfNull { KnolusResult.knolusValue(KnolusConstants.Undefined) }
+            .switchIfNull { KnolusResult.knolusTypedVar(KnolusConstants.Undefined) }
             .map { variableValue ->
                 KnolusUnion.DeclareVariableAction(
                     ctx.variableName.text,
@@ -124,25 +124,27 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
     }
 
     override fun visitVariableValue(ctx: KnolusParser.VariableValueContext?): KnolusResult<KnolusUnion.VariableValue<KnolusTypedValue>> {
-        if (ctx == null) return KnolusResult.Empty()
+        if (ctx == null) return KnolusResult.empty()
 
         if (!restrictions.canVisitVariableValue(ctx))
             return KnolusResult.Error(VARIABLE_VALUE_VISIT_DENIED, "Restriction denied variable value visit")
 
         val variableValue =
-            (if (ctx.NULL() != null) KnolusResult.knolusValue(KnolusConstants.Null) else null)
-                ?: ctx.quotedCharacter()?.let(this::visitQuotedCharacter)
-                ?: ctx.quotedString()?.let(this::visitQuotedString)
-                ?: ctx.number()?.let(this::visitNumber)
-                ?: ctx.variableReference()?.let(this::visitVariableReference)
-                ?: ctx.memberVariableReference()?.let(this::visitMemberVariableReference)
-                ?: ctx.functionCall()?.let(this::visitFunctionCall)
-                ?: ctx.memberFunctionCall()?.let(this::visitMemberFunctionCall)
-                ?: ctx.expression()?.let(this::visitExpression)
-                ?: ctx.bool()?.let(this::visitBool)
-                ?: ctx.array()?.let(this::visitArray)
-                ?: KnolusResult.Error(NO_VALID_VARIABLE_VALUE,
-                    "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})")
+            (if (ctx.NULL() != null) KnolusResult.knolusTypedVar(KnolusConstants.Null) else null)
+            ?: ctx.quotedCharacter()?.let(this::visitQuotedCharacter)
+            ?: ctx.quotedString()?.let(this::visitQuotedString)
+            ?: ctx.number()?.let(this::visitNumber)
+            ?: ctx.variableReference()?.let(this::visitVariableReference)
+            ?: ctx.memberVariableReference()?.let(this::visitMemberVariableReference)
+            ?: ctx.functionCall()?.let(this::visitFunctionCall)
+            ?: ctx.memberFunctionCall()?.let(this::visitMemberFunctionCall)
+            ?: ctx.expression()?.let(this::visitExpression)
+            ?: ctx.bool()?.let(this::visitBool)
+            ?: ctx.array()?.let(this::visitArray)
+            ?: KnolusResult.Error(
+                NO_VALID_VARIABLE_VALUE,
+                "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})"
+            )
 
         return variableValue.filterTo { value ->
             if (restrictions.shouldTakeVariableValue(ctx, value)) null
@@ -155,10 +157,12 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(BOOLEAN_VISIT_DENIED, "Restriction denied boolean visit")
 
         val value =
-            if (ctx.TRUE() != null) KnolusResult.knolusValue(KnolusBoolean(true))
-            else if (ctx.FALSE() != null) KnolusResult.knolusValue(KnolusBoolean(false))
-            else KnolusResult.Error(NO_VALID_VARIABLE_VALUE,
-                "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})")
+            if (ctx.TRUE() != null) KnolusResult.knolusTypedVar(KnolusBoolean(true))
+            else if (ctx.FALSE() != null) KnolusResult.knolusTypedVar(KnolusBoolean(false))
+            else KnolusResult.Error(
+                NO_VALID_VARIABLE_VALUE,
+                "No valid variable value in \"${ctx.text}\" (${ctx.toString(parser)})"
+            )
 
         return value.filterTo { bool ->
             if (restrictions.shouldTakeBoolean(ctx, bool)) null
@@ -221,19 +225,21 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(QUOTED_CHARACTER_VISIT_DENIED, "Restriction denied quoted character visit")
 
         val charValue = ctx.CHARACTER_ESCAPES()?.let { node ->
-            KnolusResult.knolusCharValue(when (val c = node.text[1]) {
-                'b' -> '\b'
-                'f' -> '\u000C'
-                'n' -> '\n'
-                'r' -> '\r'
-                't' -> '\t'
-                'u' -> node.text.substring(2).toInt(16).toChar()
-                else -> c
-            })
+            KnolusResult.knolusCharValue(
+                when (val c = node.text[1]) {
+                    'b' -> '\b'
+                    'f' -> '\u000C'
+                    'n' -> '\n'
+                    'r' -> '\r'
+                    't' -> '\t'
+                    'u' -> node.text.substring(2).toInt(16).toChar()
+                    else -> c
+                }
+            )
         } ?: ctx.QUOTED_CHARACTERS()?.let { node -> KnolusResult.knolusCharValue(node.text[0]) }
-        ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { node -> KnolusResult.knolusCharValue('\n') }
-        ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KnolusResult.knolusCharValue('\n') }
-        ?: KnolusResult.Error(NO_VALID_CHAR_VALUE, "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
+                        ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { node -> KnolusResult.knolusCharValue('\n') }
+                        ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KnolusResult.knolusCharValue('\n') }
+                        ?: KnolusResult.Error(NO_VALID_CHAR_VALUE, "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
 
         return charValue.filterTo { char ->
             if (restrictions.shouldTakeQuotedCharacter(ctx, char)) null
@@ -245,7 +251,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
         if (!restrictions.canVisitVariableReference(ctx))
             return KnolusResult.Error(VARIABLE_REF_VISIT_DENIED, "Restriction denied variable reference visit")
 
-        return KnolusResult.knolusValue(KnolusVariableReference(ctx.variableName.text.removePrefix("$")))
+        return KnolusResult.knolusTypedVar(KnolusVariableReference(ctx.variableName.text.removePrefix("$")))
             .filterTo { ref ->
                 if (restrictions.shouldTakeVariableReference(ctx, ref)) null
                 else KnolusResult.Error(VARIABLE_REF_RESULT_DENIED, "Restriction denied variable reference result")
@@ -254,16 +260,22 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
 
     override fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KnolusResult<KnolusUnion.VariableValue<KnolusPropertyReference>> {
         if (!restrictions.canVisitMemberVariableReference(ctx))
-            return KnolusResult.Error(MEMBER_VARIABLE_REF_VISIT_DENIED,
-                "Restriction denied member variable reference visit")
+            return KnolusResult.Error(
+                MEMBER_VARIABLE_REF_VISIT_DENIED,
+                "Restriction denied member variable reference visit"
+            )
 
-        return KnolusResult.knolusValue(KnolusPropertyReference(
-            ctx.memberName.text.removeSuffix("."),
-            ctx.variableReference().variableName.text
-        )).filterTo { ref ->
+        return KnolusResult.knolusTypedVar(
+            KnolusPropertyReference(
+                ctx.memberName.text.removeSuffix("."),
+                ctx.variableReference().variableName.text
+            )
+        ).filterTo { ref ->
             if (restrictions.shouldTakeMemberVariableReference(ctx, ref)) null
-            else KnolusResult.Error(MEMBER_VARIABLE_REF_RESULT_DENIED,
-                "Restriction denied member variable reference result")
+            else KnolusResult.Error(
+                MEMBER_VARIABLE_REF_RESULT_DENIED,
+                "Restriction denied member variable reference result"
+            )
         }
     }
 
@@ -287,39 +299,51 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
 
     override fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KnolusResult<KnolusUnion.VariableValue<KnolusLazyMemberFunctionCall>> {
         if (!restrictions.canVisitMemberFunctionCall(ctx))
-            return KnolusResult.Error(MEMBER_FUNCTION_CALL_VISIT_DENIED,
-                "Restriction denied member function call visit")
+            return KnolusResult.Error(
+                MEMBER_FUNCTION_CALL_VISIT_DENIED,
+                "Restriction denied member function call visit"
+            )
 
         return visitFunctionCall(ctx.functionCall())
             .flatMap { functionCallType ->
                 val memberName = ctx.memberName.text.removeSuffix(".")
-                KnolusResult.knolusLazy(KnolusLazyMemberFunctionCall(
-                    memberName,
-                    functionCallType.value.name,
-                    functionCallType.value.parameters
-                ))
+                KnolusResult.knolusLazy(
+                    KnolusLazyMemberFunctionCall(
+                        memberName,
+                        functionCallType.value.name,
+                        functionCallType.value.parameters
+                    )
+                )
             }.filterTo { func ->
                 if (restrictions.shouldTakeMemberFunctionCall(ctx, func)) null
-                else KnolusResult.Error(MEMBER_FUNCTION_CALL_RESULT_DENIED,
-                    "Restriction denied member function call result")
+                else KnolusResult.Error(
+                    MEMBER_FUNCTION_CALL_RESULT_DENIED,
+                    "Restriction denied member function call result"
+                )
             }
     }
 
     override fun visitFunctionCallParameter(ctx: KnolusParser.FunctionCallParameterContext): KnolusResult<KnolusUnion.FunctionParameterType> {
         if (!restrictions.canVisitFunctionCallParameter(ctx))
-            return KnolusResult.Error(FUNCTION_CALL_PARAM_VISIT_DENIED,
-                "Restriction denied function call parameter visit")
+            return KnolusResult.Error(
+                FUNCTION_CALL_PARAM_VISIT_DENIED,
+                "Restriction denied function call parameter visit"
+            )
 
         return visitVariableValue(ctx.variableValue())
             .flatMap { value ->
-                KnolusResult.union(KnolusUnion.FunctionParameterType(
-                    ctx.parameterName?.text?.removeSuffix("="),
-                    value.value
-                ))
+                KnolusResult.union(
+                    KnolusUnion.FunctionParameterType(
+                        ctx.parameterName?.text?.removeSuffix("="),
+                        value.value
+                    )
+                )
             }.filterTo { param ->
                 if (restrictions.shouldTakeFunctionCallParameter(ctx, param)) null
-                else KnolusResult.Error(FUNCTION_CALL_PARAM_RESULT_DENIED,
-                    "Restriction denied function call parameter result")
+                else KnolusResult.Error(
+                    FUNCTION_CALL_PARAM_RESULT_DENIED,
+                    "Restriction denied function call parameter result"
+                )
             }
     }
 
@@ -328,10 +352,10 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(NUMBER_VISIT_DENIED, "Restriction denied number visit")
 
         val number = ctx.wholeNumber()?.let(this::visitWholeNumber)
-            ?: ctx.decimalNumber()?.let(this::visitDecimalNumber)
-            ?: KnolusResult.Error(
-                NO_VALID_NUMBER_TYPE, "No valid number type in \"${ctx.text}\" (${ctx.toString(parser)})"
-            )
+                     ?: ctx.decimalNumber()?.let(this::visitDecimalNumber)
+                     ?: KnolusResult.Error(
+                         NO_VALID_NUMBER_TYPE, "No valid number type in \"${ctx.text}\" (${ctx.toString(parser)})"
+                     )
 
         return number.filterTo { num ->
             if (restrictions.shouldTakeNumber(ctx, num)) null
@@ -344,9 +368,9 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(WHOLE_NUMBER_VISIT_DENIED, "Restriction denied whole number visit")
 
         val int = ctx.INTEGER().text.toIntOrNullBaseN()
-            ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR, "${ctx.INTEGER().text} was not a valid int string")
+                  ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR, "${ctx.INTEGER().text} was not a valid int string")
 
-        return KnolusResult.knolusValue(KnolusInt(int)).filterTo { num ->
+        return KnolusResult.knolusTypedVar(KnolusInt(int)).filterTo { num ->
             if (restrictions.shouldTakeWholeNumber(ctx, num)) null
             else KnolusResult.Error(WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
         }
@@ -357,10 +381,12 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(DECIMAL_NUMBER_VISIT_DENIED, "Restriction denied decimal number visit")
 
         val double = ctx.DECIMAL_NUMBER().text.toDoubleOrNull()
-            ?: return KnolusResult.Error(NUMBER_FORMAT_ERROR,
-                "${ctx.DECIMAL_NUMBER().text} was not a valid double string")
+                     ?: return KnolusResult.Error(
+                         NUMBER_FORMAT_ERROR,
+                         "${ctx.DECIMAL_NUMBER().text} was not a valid double string"
+                     )
 
-        return KnolusResult.knolusValue(KnolusDouble(double)).filterTo { num ->
+        return KnolusResult.knolusTypedVar(KnolusDouble(double)).filterTo { num ->
             if (restrictions.shouldTakeDecimalNumber(ctx, num)) null
             else KnolusResult.Error(DECIMAL_NUMBER_RESULT_DENIED, "Restriction denied decimal number result")
         }
@@ -380,7 +406,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             ops.add(Pair(expr, value.value))
         }
 
-        return KnolusResult.knolusValue(KnolusLazyExpression(starting.value, ops.toTypedArray())).filterTo { expr ->
+        return KnolusResult.knolusTypedVar(KnolusLazyExpression(starting.value, ops.toTypedArray())).filterTo { expr ->
             if (restrictions.shouldTakeExpression(ctx, expr)) null
             else KnolusResult.Error(EXPRESSION_RESULT_DENIED, "Restriction denied expression result")
         }
@@ -388,8 +414,10 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
 
     override fun visitExpressionOperation(ctx: KnolusParser.ExpressionOperationContext): KnolusResult<ExpressionOperator> {
         if (!restrictions.canVisitExpressionOperation(ctx))
-            return KnolusResult.Error(EXPRESSION_OPERATION_VISIT_DENIED,
-                "Restriction denied expression operation visit")
+            return KnolusResult.Error(
+                EXPRESSION_OPERATION_VISIT_DENIED,
+                "Restriction denied expression operation visit"
+            )
 
         val value =
             if (ctx.EXPR_EXPONENTIAL() != null) KnolusResult.unionExprExponential()
@@ -397,13 +425,17 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             else if (ctx.EXPR_MINUS() != null) KnolusResult.unionExprMinus()
             else if (ctx.EXPR_DIVIDE() != null) KnolusResult.unionExprDivide()
             else if (ctx.EXPR_MULTIPLY() != null) KnolusResult.unionExprMultiply()
-            else KnolusResult.Error(NO_VALID_EXPRESSION_OPERATION,
-                "No valid expression operation in \"${ctx.text}\" (${ctx.toString(parser)})")
+            else KnolusResult.Error(
+                NO_VALID_EXPRESSION_OPERATION,
+                "No valid expression operation in \"${ctx.text}\" (${ctx.toString(parser)})"
+            )
 
         return value.filterTo { op ->
             if (restrictions.shouldTakeExpressionOperation(ctx, op)) null
-            else KnolusResult.Error(EXPRESSION_OPERATION_RESULT_DENIED,
-                "Restriction denied expression operation result")
+            else KnolusResult.Error(
+                EXPRESSION_OPERATION_RESULT_DENIED,
+                "Restriction denied expression operation result"
+            )
         }
     }
 
@@ -412,7 +444,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Kno
             return KnolusResult.Error(ARRAY_VISIT_DENIED, "Restriction denied array visit")
 
         return visitArrayContents(ctx.arrayContents())
-            .flatMap { array -> KnolusResult.knolusValue(KnolusArray.of(array.inner)) }
+            .flatMap { array -> KnolusResult.knolusTypedVar(KnolusArray.of(array.inner)) }
             .filterTo { array ->
                 if (restrictions.shouldTakeArray(ctx, array)) null
                 else KnolusResult.Error(ARRAY_RESULT_DENIED, "Restriction denied array result")
@@ -466,7 +498,7 @@ fun parseKnolusScope(text: String, restrictions: KnolusVisitorRestrictions): Kno
 
 sealed class ScopeResult {
     data class Returned<T : KnolusTypedValue>(val value: T) : ScopeResult()
-    data class LineMap(val lines: Array<Pair<KnolusUnion, KnolusResult<*>>>) : ScopeResult() {
+    data class LineMap(val lines: Array<Pair<KnolusUnion, *>>) : ScopeResult() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -485,39 +517,42 @@ sealed class ScopeResult {
 }
 
 @ExperimentalUnsignedTypes
-suspend fun KnolusUnion.ScopeType.run(
-    parentContext: KnolusContext,
+suspend fun <R> KnolusUnion.ScopeType.run(
+    parentContext: KnolusContext<R>,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext.() -> Unit = {},
+    init: KnolusContext<R>.() -> Unit = {},
 ) = run(parentContext.restrictions, parentContext, parameters, init)
 
-suspend fun KnolusUnion.ScopeType.run(
-    restrictions: KnolusRestrictions,
-    parentContext: KnolusContext? = null,
+suspend fun <R> KnolusUnion.ScopeType.run(
+    restrictions: KnolusRestriction<R>,
+    parentContext: KnolusContext<R>? = null,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext.() -> Unit = {},
+    init: KnolusContext<R>.() -> Unit = {},
 ) = runDirect(KnolusScopeContext(this, parentContext, restrictions), parameters, init)
 
 @ExperimentalUnsignedTypes
-suspend fun KnolusUnion.ScopeType.runDirect(
-    knolusContext: KnolusContext,
+suspend fun <R> KnolusUnion.ScopeType.runDirect(
+    knolusContext: KnolusContext<R>,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext.() -> Unit = {},
-): ScopeResult {
+    init: KnolusContext<R>.() -> Unit = {},
+): KnolusResult<ScopeResult> {
     parameters.forEach { (k, v) -> knolusContext[k] = v as? KnolusTypedValue ?: return@forEach }
 
     knolusContext.init()
 
-    return ScopeResult.LineMap(lines.mapWith { union ->
+    return KnolusResult.success(ScopeResult.LineMap(lines.mapWith { union ->
         when (union) {
-            is KnolusUnion.Action<*> -> union.run(knolusContext)
-            is KnolusUnion.VariableValue<*> ->
-                if (union.value is KnolusUnion.Action<*>)
-                    (union.value as KnolusUnion.Action<*>).run(knolusContext)
-                else
-                    KnolusResult.Empty()
-            is KnolusUnion.ReturnStatement -> return ScopeResult.Returned(union.value.evaluateOrSelf(knolusContext))
-            else -> KnolusResult.Empty()
+            is KnolusUnion.Action<*> -> union.run(knolusContext).doOnFailure { return it.cast() }
+            is KnolusUnion.VariableValue<*> -> union.value.let { value ->
+                if (value is KnolusUnion.Action<*>) value.run(knolusContext).doOnFailure { return it.cast() }
+                else value
+            }
+            is KnolusUnion.ReturnStatement -> union.value.let { value ->
+                if (value is KnolusTypedValue.UnsureValue<KnolusTypedValue> && value.needsEvaluation(knolusContext))
+                    return value.evaluate(knolusContext).map(ScopeResult::Returned)
+                return KnolusResult.success(ScopeResult.Returned(value))
+            }
+            else -> null
         }
-    })
+    }))
 }

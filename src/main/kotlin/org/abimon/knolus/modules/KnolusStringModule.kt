@@ -8,10 +8,10 @@ import org.abimon.knolus.types.KnolusString
 import kotlin.math.log
 
 object KnolusStringModule {
-    suspend fun concatToString(context: KnolusContext, a: String, b: Char) = KnolusString("${a}${b}")
-    suspend fun concatStrings(context: KnolusContext, a: String, b: String) = KnolusString("${a}${b}")
+    suspend fun concatToString(a: String, b: Char) = KnolusString("${a}${b}")
+    suspend fun concatStrings(a: String, b: String) = KnolusString("${a}${b}")
 
-    fun register(context: KnolusContext) = with(context) {
+    fun register(context: KnolusContext<*>) = with(context) {
         registerOperatorFunction(stringTypeParameter(),
             ExpressionOperator.PLUS,
             charTypeParameter(),
@@ -50,7 +50,7 @@ object KnolusStringModule {
         registerIntToString()
     }
 
-    fun KnolusContext.registerIntToString() {
+    fun KnolusContext<*>.registerIntToString() {
         registerFunction(
             "hex",
             numberTypeAsIntParameter("num"),

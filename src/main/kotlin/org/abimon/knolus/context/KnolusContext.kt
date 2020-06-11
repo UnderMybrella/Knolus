@@ -3,21 +3,15 @@
 package org.abimon.knolus.context
 
 import org.abimon.knolus.*
-import org.abimon.knolus.modules.functionregistry.functionBuilder
-import org.abimon.knolus.modules.functionregistry.setFunction
-import org.abimon.knolus.restrictions.KnolusRestrictions
+import org.abimon.knolus.restrictions.KnolusRestriction
 import org.abimon.knolus.restrictions.canAskAsParentForFunction
 import org.abimon.knolus.restrictions.canAskAsParentForVariable
 import org.abimon.knolus.types.*
-import org.antlr.v4.runtime.Parser
-import org.antlr.v4.runtime.misc.Utils
-import org.antlr.v4.runtime.tree.Tree
-import org.antlr.v4.runtime.tree.Trees
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 @ExperimentalUnsignedTypes
-abstract class KnolusContext(val parent: KnolusContext?, val restrictions: KnolusRestrictions) {
+abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions: KnolusRestriction<R>) {
     companion object {
         const val ACCESS_DENIED = 0x1000
         const val UNDECLARED_VARIABLE = 0x1001
@@ -29,18 +23,27 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
 //        const val
     }
 
-    val recursionLevel: Int by lazy { if (parent == null) 0 else parent.recursionLevel + 1 }
+    val nullTypeCoercible: Boolean = true
+    val undefinedTypeCoercible: Boolean = false
 
-    open fun <T> countFunctionRecursion(func: KnolusFunction<T>): Int = parent?.countFunctionRecursion(func) ?: 0
+    val depth: Int by lazy { if (parent == null) 0 else parent.depth + 1 }
+
+    open fun recursiveCountFor(func: KnolusFunction<*, R, *>): Int = parent?.recursiveCountFor(func) ?: 0
 
     protected val variableRegistry: MutableMap<String, KnolusTypedValue> = HashMap()
-    protected val functionRegistry: MutableMap<String, MutableList<KnolusFunction<KnolusTypedValue?>>> =
+    protected val functionRegistry: MutableMap<String, MutableList<KnolusFunction<KnolusTypedValue?, R, *>>> =
         HashMap()
 
-    operator fun get(key: String): KnolusTypedValue? =
-        if (restrictions.canGetVariable(this, key) && key in variableRegistry) variableRegistry[key]
-        else if (parent?.canAskAsParentForVariable(this, key) == true) parent[key]
-        else null
+    operator fun get(key: String): KnolusResult<KnolusTypedValue> =
+        restrictions.canGetVariable(this, key).flatMap {
+            val value = variableRegistry[key]
+
+            if (value == null) {
+                parent?.canAskAsParentForVariable(this, key)?.flatMap { parent[key] } ?: KnolusResult.empty()
+            } else {
+                KnolusResult.knolusTyped(value)
+            }
+        }
 
     operator fun set(key: String, global: Boolean = false, value: KnolusTypedValue): KnolusResult<KnolusTypedValue?> {
         val parentResult: KnolusResult<KnolusTypedValue?>?
@@ -51,26 +54,34 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
             parentResult = null
         }
 
-        if (restrictions.canSetVariable(this, key, value, parentResult != null)) {
-            return KnolusResult.Success(variableRegistry.put(key, value))
-        } else {
-            return KnolusResult.Error(FAILED_TO_SET_VARIABLE,
-                "Failed to locally set $key to $value",
-                parentResult)
-        }
+        return restrictions.canSetVariable(this, key, value, parentResult)
+            .flatMap { KnolusResult.knolusTyped(variableRegistry.put(key, value)) }
+            .switchIfHasCause { result ->
+                KnolusResult.Error(
+                    FAILED_TO_SET_VARIABLE,
+                    "Failed to locally set $key to $value",
+                    result.mapRootCausedBy(parentResult)
+                )
+            }
     }
 
-    operator fun contains(key: String): Boolean = (restrictions.canGetVariable(this, key) && key in variableRegistry)
-            || (parent?.canAskAsParentForVariable(this, key) == true && parent.contains(key))
+    fun containsWithResult(key: String): KnolusResult<R> =
+        restrictions.canGetVariable(this, key).filter { key in variableRegistry }
+            .switchIfFailure {
+                parent?.canAskAsParentForVariable(this, key)?.filter { parent.contains(key) } ?: KnolusResult.empty()
+            }
+
+    operator fun contains(key: String): Boolean =
+        containsWithResult(key).wasSuccessful()
 
     fun register(
         name: String,
-        func: KnolusFunction<KnolusTypedValue?>,
+        func: KnolusFunction<KnolusTypedValue?, R, *>,
         global: Boolean = false,
-    ): KnolusResult<KnolusFunction<KnolusTypedValue?>> {
+    ): KnolusResult<KnolusFunction<KnolusTypedValue?, R, *>> {
         val sanitisedName = name.sanitiseFunctionIdentifier()
 
-        val parentResult: KnolusResult<KnolusFunction<KnolusTypedValue?>>?
+        val parentResult: KnolusResult<KnolusFunction<KnolusTypedValue?, R, *>>?
         if (global && parent != null) {
             parentResult = parent.register(sanitisedName, func, global)
             if (parentResult is KnolusResult.Successful) return parentResult
@@ -78,23 +89,15 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
             parentResult = null
         }
 
-        if (restrictions.canRegisterFunction(this, sanitisedName, func, parentResult)) {
-            val functions: MutableList<KnolusFunction<KnolusTypedValue?>>
-            if (sanitisedName !in functionRegistry) {
-                functions = ArrayList()
-                functionRegistry[sanitisedName] = functions
-            } else {
-                functions = functionRegistry.getValue(sanitisedName)
+        return restrictions.canRegisterFunction(this, sanitisedName, func, parentResult)
+            .map { func.addTo(functionRegistry.computeIfAbsent(sanitisedName) { ArrayList() }) }
+            .switchIfHasCause { result ->
+                KnolusResult.Error(
+                    FAILED_TO_REGISTER_FUNCTION,
+                    "Failed to register $name ($func)",
+                    result.mapRootCausedBy(parentResult)
+                )
             }
-
-            functions.add(func)
-
-            return KnolusResult.Success(func)
-        } else {
-            return KnolusResult.Error(FAILED_TO_REGISTER_FUNCTION,
-                "Failed to register $name ($func)",
-                parentResult)
-        }
     }
 
 //    suspend fun invokeScript(
@@ -114,9 +117,9 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KnolusResult<KnolusTypedValue> {
-        if (!restrictions.canAskForMemberFunction(this, member, functionName, functionParameters))
-            return KnolusResult.Error(ACCESS_DENIED,
-                "KnolusRestriction denied access to member function")
+        restrictions.canAskForMemberFunction(this, member, functionName, functionParameters).doOnFailure { causedBy ->
+            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to member function", causedBy)
+        }
 
         val params = arrayOfNulls<KnolusUnion.FunctionParameterType>(functionParameters.size + 1)
         params[0] = KnolusUnion.FunctionParameterType("self", member)
@@ -134,9 +137,9 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         member: KnolusTypedValue,
         propertyName: String,
     ): KnolusResult<KnolusTypedValue> {
-        if (!restrictions.canAskForMemberPropertyGetter(this, member, propertyName))
-            return KnolusResult.Error(ACCESS_DENIED,
-                "KnolusRestriction denied access to member property getter")
+        restrictions.canAskForMemberPropertyGetter(this, member, propertyName).doOnFailure { causedBy ->
+            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to member property", causedBy)
+        }
 
         val params = arrayOf(KnolusUnion.FunctionParameterType("self", member))
 
@@ -150,12 +153,14 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         a: KnolusTypedValue,
         b: KnolusTypedValue,
     ): KnolusResult<KnolusTypedValue> {
-        if (!restrictions.canAskForOperatorFunction(this, operator, a, b))
-            return KnolusResult.Error(ACCESS_DENIED,
-                "KnolusRestriction denied access to operator function")
+        restrictions.canAskForOperatorFunction(this, operator, a, b).doOnFailure { causedBy ->
+            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to operator function", causedBy)
+        }
 
-        val params = arrayOf(KnolusUnion.FunctionParameterType("a", a),
-            KnolusUnion.FunctionParameterType("b", b))
+        val params = arrayOf(
+            KnolusUnion.FunctionParameterType("a", a),
+            KnolusUnion.FunctionParameterType("b", b)
+        )
 
         return a.typeInfo.getMemberOperatorNames(operator).fold(KnolusResult.empty()) { acc, funcName ->
             acc.switchIfEmpty { invokeFunction(funcName, params) }
@@ -181,17 +186,19 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
     suspend fun invokeFunction(
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-        selfContext: KnolusContext = this
+        selfContext: KnolusContext<R> = this,
     ): KnolusResult<KnolusTypedValue> {
-        if (!restrictions.canAskForFunction(this, functionName, functionParameters))
-            return KnolusResult.Error(ACCESS_DENIED,
-                "KnolusRestriction denied access to function")
+        restrictions.canAskForFunction(this, functionName, functionParameters).doOnFailure { causedBy ->
+            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
+        }
 
-        var causedBy: KnolusResult<KnolusTypedValue>? = null
+        var collectiveCause: KnolusResult<KnolusTypedValue>? = null
 
         functionRegistry[functionName.sanitiseFunctionIdentifier()]?.forEach functionList@{ function ->
-            if (!restrictions.canTryFunction(this, functionName, functionParameters, function))
-                return@functionList
+            restrictions.canTryFunction(this, functionName, functionParameters, function).doOnFailure { causedBy ->
+                collectiveCause = (collectiveCause as? KnolusResult.WithCause<KnolusTypedValue, *>)?.withCause(causedBy)
+                                  ?: collectiveCause
+            }
 
             val unmappedParams = function.parameters.toMutableList()
             val passedParams: MutableMap<String, KnolusTypedValue> = HashMap()
@@ -223,8 +230,11 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
             }
 
             val result = selfContext.invokeFunction(function, passedParams)
-            if (result is KnolusResult.Successful) return result
-            causedBy = result.mapRootCausedBy { causedBy }
+            if (result.wasSuccessful()) return result
+            if (collectiveCause == null)
+                collectiveCause = result
+            else
+                collectiveCause = (collectiveCause as? KnolusResult.WithCause<KnolusTypedValue, *>)?.withCause(result) ?: collectiveCause
 //
 //            if (!restrictions.canRunFunction(this, function, passedParams)) {
 //                functionRunDenied = true
@@ -238,33 +248,34 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
 //            )
         }
 
-        if (parent?.canAskAsParentForFunction(this, functionName, functionParameters) == true)
-            return parent.invokeFunction(functionName, functionParameters, selfContext)
+        if (parent == null) return collectiveCause ?: KnolusResult.empty()
 
-        if (causedBy != null)
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
-
-        return KnolusResult.empty()
+        return parent.canAskAsParentForFunction(this, functionName, functionParameters).flatMap {
+            parent.invokeFunction(functionName, functionParameters, selfContext)
+        }
     }
 
     suspend fun invokeFunction(
-        function: KnolusFunction<KnolusTypedValue?>,
+        function: KnolusFunction<KnolusTypedValue?, R, *>,
         vararg parameters: Pair<String, KnolusTypedValue>,
     ) = invokeFunction(function, parameters.toMap())
 
     suspend fun invokeFunction(
-        function: KnolusFunction<KnolusTypedValue?>,
+        function: KnolusFunction<KnolusTypedValue?, R, *>,
         parameters: Map<String, KnolusTypedValue>,
     ): KnolusResult<KnolusTypedValue> {
-        if (!restrictions.canRunFunction(this, function, parameters))
-            return KnolusResult.Error(ACCESS_DENIED,
-                "KnolusRestriction denied access to function")
+        restrictions.canRunFunction(this, function, parameters).doOnFailure { causedBy ->
+            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
+        }
 
-        val subroutineRestrictions = restrictions.createSubroutineRestrictions(this, function, parameters)
+        return restrictions.createSubroutineRestrictions(this, function, parameters)
+            .flatMap { subroutineRestrictions ->
+                function as KnolusFunction<KnolusTypedValue?, R, KnolusContext<out R>>
 
-        return KnolusResult.Success(
-            function.suspendInvoke(KnolusFunctionContext(function, this, subroutineRestrictions), parameters)
-                ?: KnolusConstants.Null
-        )
+                KnolusResult.knolusTyped(
+                    function.suspendInvoke(KnolusFunctionContext(function, this, subroutineRestrictions), parameters)
+                    ?: KnolusConstants.Null
+                )
+            }
     }
 }

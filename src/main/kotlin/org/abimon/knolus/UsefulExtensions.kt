@@ -134,6 +134,21 @@ inline fun <T, C: MutableList<T>> C.withElement(t: T): C {
     return this
 }
 
+inline fun <T, C: MutableList<T>> C.withElements(t: List<out T>): C {
+    addAll(t)
+    return this
+}
+
+inline fun <T, C: MutableList<T>> C.withElements(t: Array<out T>): C {
+    addAll(t)
+    return this
+}
+
+inline fun <T, C: MutableList<T>> T.addTo(c: C): T {
+    c.add(this)
+    return this
+}
+
 internal val SEPARATOR_CHARACTERS = "[_\\- ]".toRegex()
 internal fun String.sanitiseFunctionIdentifier(): String = toUpperCase().replace(SEPARATOR_CHARACTERS, "")
 

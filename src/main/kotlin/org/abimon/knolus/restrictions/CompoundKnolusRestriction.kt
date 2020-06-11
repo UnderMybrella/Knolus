@@ -5,139 +5,117 @@ import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
 
 @ExperimentalUnsignedTypes
-class CompoundKnolusRestriction(
-    val startingRestriction: KnolusRestrictions,
-    val restrictions: List<KnolusRestrictions>,
-) :
-    KnolusRestrictions {
+class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>, val startingValue: () -> KnolusResult<R>, val emptyResult: () -> KnolusResult<R>) : KnolusRestriction<R> {
     companion object {
-        fun of(vararg restrictions: KnolusRestrictions) =
-            CompoundKnolusRestriction(restrictions[0],
-                restrictions.drop(1))
+        fun <R> of(vararg restrictions: KnolusRestriction<R>, emptyResult: () -> KnolusResult<R>) =
+            CompoundKnolusRestriction(restrictions.toList(), KnolusResult.Empty.INSTANCE::invoke, emptyResult)
 
-        fun fromPermissive(vararg restrictions: KnolusRestrictions) =
-            CompoundKnolusRestriction(KnolusBasePermissiveRestrictions.INSTANCE, restrictions.toList())
+        fun fromPermissive(vararg restrictions: KnolusRestriction<StaticSuccess>) =
+            CompoundKnolusRestriction(restrictions.toList(), KnolusResult.Empty.INSTANCE::invoke, StaticSuccess::invoke)
+
+        fun <R> fromRestrictive(vararg restrictions: KnolusRestriction<R>) =
+            CompoundKnolusRestriction(restrictions.toList(), KnolusResult.Empty.INSTANCE::invoke) { KnolusResult.empty<R>() }
     }
 
-    constructor(restrictions: List<KnolusRestrictions>) : this(restrictions[0], restrictions.drop(1))
-    constructor(restrictions: Array<KnolusRestrictions>) : this(restrictions[0], restrictions.drop(1))
+    constructor(restrictions: Array<KnolusRestriction<R>>, emptyResult: () -> KnolusResult<R>) : this(restrictions.toList(), KnolusResult.Empty.INSTANCE::invoke, emptyResult)
 
-    override fun canGetVariable(context: KnolusContext, variableName: String): Boolean =
-        restrictions.fold(startingRestriction.canGetVariable(context, variableName)) { acc, r ->
-            acc && r.canGetVariable(context, variableName)
-        }
+    override fun canGetVariable(context: KnolusContext<R>, variableName: String): KnolusResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canGetVariable(context, variableName) }
+        }.switchIfEmpty(emptyResult)
 
-    override fun canAskParentForVariable(child: KnolusContext, parent: KnolusContext, variableName: String): Boolean =
-        restrictions.fold(startingRestriction.canAskParentForVariable(child, parent, variableName)) { acc, r ->
-            acc && r.canAskParentForVariable(child, parent, variableName)
-        }
+    override fun canAskParentForVariable(child: KnolusContext<R>, parent: KnolusContext<R>, variableName: String): KnolusResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canAskParentForVariable(child, parent, variableName) }
+        }.switchIfEmpty(emptyResult)
 
     override fun canSetVariable(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         variableName: String,
         variableValue: KnolusTypedValue,
-        attemptedParentalSet: Boolean,
-    ): Boolean = restrictions.fold(startingRestriction.canSetVariable(context,
-        variableName,
-        variableValue,
-        attemptedParentalSet)) { acc, r ->
-        acc && r.canSetVariable(context, variableName, variableValue, attemptedParentalSet)
-    }
+        attemptedParentalSet: KnolusResult<KnolusTypedValue?>?,
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canSetVariable(context, variableName, variableValue, attemptedParentalSet) }
+    }.switchIfEmpty(emptyResult)
 
     override fun <T> canRegisterFunction(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         functionName: String,
-        function: KnolusFunction<T>,
-        attemptedParentalRegister: KnolusResult<KnolusFunction<KnolusTypedValue?>>?,
-    ): Boolean = restrictions.fold(startingRestriction.canRegisterFunction(context,
-        functionName,
-        function,
-        attemptedParentalRegister)) { acc, r ->
-        acc && r.canRegisterFunction(context, functionName, function, attemptedParentalRegister)
-    }
+        function: KnolusFunction<T, R, *>,
+        attemptedParentalRegister: KnolusResult<KnolusFunction<T, R, *>>?,
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canRegisterFunction(context, functionName, function, attemptedParentalRegister) }
+    }.switchIfEmpty(emptyResult)
 
     override fun canAskForFunction(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean =
-        restrictions.fold(startingRestriction.canAskForFunction(context, functionName, functionParameters)) { acc, r ->
-            acc && r.canAskForFunction(context, functionName, functionParameters)
-        }
+    ): KnolusResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canAskForFunction(context, functionName, functionParameters) }
+        }.switchIfEmpty(emptyResult)
 
     override fun canAskParentForFunction(
-        child: KnolusContext,
-        parent: KnolusContext,
+        child: KnolusContext<R>,
+        parent: KnolusContext<R>,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean = restrictions.fold(startingRestriction.canAskParentForFunction(child,
-        parent,
-        functionName,
-        functionParameters)) { acc, r ->
-        acc && r.canAskParentForFunction(child, parent, functionName, functionParameters)
-    }
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canAskParentForFunction(child, parent, functionName, functionParameters) }
+    }.switchIfEmpty(emptyResult)
 
     override fun canTryFunction(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-        function: KnolusFunction<KnolusTypedValue?>,
-    ): Boolean = restrictions.fold(startingRestriction.canTryFunction(context,
-        functionName,
-        functionParameters,
-        function)) { acc, r ->
-        acc && r.canTryFunction(context, functionName, functionParameters, function)
-    }
+        function: KnolusFunction<KnolusTypedValue?, R, *>,
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canTryFunction(context, functionName, functionParameters, function) }
+    }.switchIfEmpty(emptyResult)
 
     override fun canRunFunction(
-        context: KnolusContext,
-        function: KnolusFunction<KnolusTypedValue?>,
+        context: KnolusContext<R>,
+        function: KnolusFunction<KnolusTypedValue?, R, *>,
         parameters: Map<String, KnolusTypedValue>,
-    ): Boolean = restrictions.fold(startingRestriction.canRunFunction(context, function, parameters)) { acc, r ->
-        acc && r.canRunFunction(context, function, parameters)
-    }
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canRunFunction(context, function, parameters) }
+    }.switchIfEmpty(emptyResult)
 
     override fun canAskForMemberFunction(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         member: KnolusTypedValue,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): Boolean = restrictions.fold(startingRestriction.canAskForMemberFunction(context,
-        member,
-        functionName,
-        functionParameters)) { acc, r ->
-        acc && r.canAskForMemberFunction(context, member, functionName, functionParameters)
-    }
+    ): KnolusResult<R> = restrictions.fold(startingValue()) { acc, r ->
+        acc.switchIfEmpty { r.canAskForMemberFunction(context, member, functionName, functionParameters) }
+    }.switchIfEmpty(emptyResult)
 
     override fun canAskForMemberPropertyGetter(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         member: KnolusTypedValue,
         propertyName: String,
-    ): Boolean =
-        restrictions.fold(startingRestriction.canAskForMemberPropertyGetter(context, member, propertyName)) { acc, r ->
-            acc && r.canAskForMemberPropertyGetter(context, member, propertyName)
-        }
+    ): KnolusResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canAskForMemberPropertyGetter(context, member, propertyName) }
+        }.switchIfEmpty(emptyResult)
 
     override fun canAskForOperatorFunction(
-        context: KnolusContext,
+        context: KnolusContext<R>,
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
-    ): Boolean =
-        restrictions.fold(startingRestriction.canAskForOperatorFunction(context, operator, a, b)) { acc, r ->
-            acc && r.canAskForOperatorFunction(context, operator, a, b)
-        }
+    ): KnolusResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canAskForOperatorFunction(context, operator, a, b) }
+        }.switchIfEmpty(emptyResult)
 
     override fun createSubroutineRestrictions(
-        currentContext: KnolusContext,
-        function: KnolusFunction<KnolusTypedValue?>,
+        currentContext: KnolusContext<R>,
+        function: KnolusFunction<KnolusTypedValue?, R, *>,
         parameters: Map<String, KnolusTypedValue>,
-    ): KnolusRestrictions =
-        restrictions.fold(mutableListOf(startingRestriction.createSubroutineRestrictions(currentContext,
-            function,
-            parameters))) { acc, r ->
-            acc.withElement(r.createSubroutineRestrictions(currentContext, function, parameters))
-        }.let { list ->
-            CompoundKnolusRestriction(list.toTypedArray())
-        }
+    ): KnolusResult<KnolusRestriction<R>> =
+        restrictions.fold(KnolusResult.success(mutableListOf<KnolusRestriction<R>>())) { acc, r ->
+            acc.flatMap { list -> r.createSubroutineRestrictions(currentContext, function, parameters).map(list::withElement) }
+        }.map { list -> CompoundKnolusRestriction(list, startingValue, emptyResult) }
 }

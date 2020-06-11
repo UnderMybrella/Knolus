@@ -1,66 +1,130 @@
 package org.abimon.knolus.modules.functionregistry
 
+import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.ParameterSpec
 import org.abimon.knolus.types.KnolusTypedValue
 
-fun <P0, P1> KnolusContext.registerMultiMemberFunction(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C: KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiMemberFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P1>>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> KnolusTypedValue,
+    parameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    func: suspend (context: C, self: P0, parameter: P1) -> KnolusTypedValue,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         typeSpec.getMemberFunctionName(functionName),
-        functionBuilder()
+        functionBuilder<R, C>()
             .setMemberFunction(typeSpec, parameterSpec, func)
             .build()
     )
 }
 
-fun <P0, P1> KnolusContext.registerMultiMemberFunctionWithoutReturn(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C: KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiMemberFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P1>>,
-    func: suspend (context: KnolusContext, self: P0, parameter: P1) -> Unit,
+    parameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    func: suspend (context: C, self: P0, parameter: P1) -> Unit,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         typeSpec.getMemberFunctionName(functionName),
-        functionBuilder()
+        functionBuilder<R, C>()
             .setMemberFunctionWithoutReturn(typeSpec, parameterSpec, func)
             .build()
     )
 }
 
-fun <P0, P1, P2> KnolusContext.registerMultiMemberFunction(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C: KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMultiMemberFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
+    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
+    func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             typeSpec.getMemberFunctionName(functionName),
-            functionBuilder()
+            functionBuilder<R, C>()
                 .setMemberFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
 }
 
-fun <P0, P1, P2> KnolusContext.registerMultiMemberFunctionWithoutReturn(
-    typeSpec: ParameterSpec<*, P0>,
+fun <R, C: KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMultiMemberFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
-    func: suspend (context: KnolusContext, self: P0, firstParameter: P1, secondParameter: P2) -> Unit,
+    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
+    func: suspend (context: C, self: P0, firstParameter: P1, secondParameter: P2) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             typeSpec.getMemberFunctionName(functionName),
-            functionBuilder()
+            functionBuilder<R, C>()
                 .setMemberFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
+                .build()
+        )
+    }
+}
+
+/** Results */
+fun <R, C: KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiMemberOperatorFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    parameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> KnolusTypedValue,
+) = parameterSpecs.forEach { parameterSpec ->
+    register(
+        typeSpec.getMemberFunctionName(functionName),
+        functionBuilder<R, C>()
+            .setMemberResultFunction(typeSpec, parameterSpec, func)
+            .build()
+    )
+}
+
+fun <R, C: KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiMemberOperatorFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    parameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> Unit,
+) = parameterSpecs.forEach { parameterSpec ->
+    register(
+        typeSpec.getMemberFunctionName(functionName),
+        functionBuilder<R, C>()
+            .setMemberResultFunctionWithoutReturn(typeSpec, parameterSpec, func)
+            .build()
+    )
+}
+
+fun <R, C: KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMultiMemberOperatorFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
+    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> KnolusTypedValue,
+) = firstParameterSpecs.forEach { firstParameterSpec ->
+    secondParameterSpecs.forEach { secondParameterSpec ->
+        register(
+            typeSpec.getMemberFunctionName(functionName),
+            functionBuilder<R, C>()
+                .setMemberResultFunction(typeSpec, firstParameterSpec, secondParameterSpec, func)
+                .build()
+        )
+    }
+}
+
+fun <R, C: KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMultiMemberOperatorFunctionWithoutReturn(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    functionName: String,
+    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
+    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit,
+) = firstParameterSpecs.forEach { firstParameterSpec ->
+    secondParameterSpecs.forEach { secondParameterSpec ->
+        register(
+            typeSpec.getMemberFunctionName(functionName),
+            functionBuilder<R, C>()
+                .setMemberResultFunctionWithoutReturn(typeSpec, firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
