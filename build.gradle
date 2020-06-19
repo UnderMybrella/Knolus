@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'maven-publish'
 
 group 'org.abimon'
-version '1.1.0'
+version '1.1.1'
 
 repositories {
     maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
