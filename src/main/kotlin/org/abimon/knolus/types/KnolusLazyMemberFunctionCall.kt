@@ -2,6 +2,10 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
+import org.abimon.kornea.errors.common.KorneaResult
+import org.abimon.kornea.errors.common.flatMap
+import org.abimon.kornea.errors.common.map
+import org.abimon.kornea.errors.common.switchIfEmpty
 
 @ExperimentalUnsignedTypes
 data class KnolusLazyMemberFunctionCall(
@@ -18,19 +22,22 @@ data class KnolusLazyMemberFunctionCall(
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall>
         get() = TypeInfo
 
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> =
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
         run(context)
 
-    override suspend fun <T> run(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> =
-        context[variableName].switchIfEmpty {
-            KnolusResult.Error(KnolusContext.UNDECLARED_VARIABLE, "No such variable by name of $variableName")
+    override suspend fun <T> run(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
+        context[variableName].switchIfEmpty { empty ->
+            KorneaResult.errorAsIllegalState(KnolusContext.UNDECLARED_VARIABLE, "No such variable by name of $variableName", empty)
         }.flatMap { member ->
-            parameters.fold(KnolusResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, funcParam ->
-                acc.flatMapOrSelf { list ->
-                    if (funcParam.parameter is KnolusTypedValue.UnsureValue<*> && funcParam.parameter.needsEvaluation(context))
-                        funcParam.parameter.evaluate(context).map { value -> list.withElement(KnolusUnion.FunctionParameterType(funcParam.name, value)) }
-                    else
-                        KnolusResult.success(list.withElement(funcParam))
+            parameters.fold(KorneaResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, funcParam ->
+                acc.flatMap { list ->
+                    if (funcParam.parameter is KnolusTypedValue.UnsureValue<*> && funcParam.parameter.needsEvaluation(context)) {
+                        funcParam.parameter.evaluate(context).map { value ->
+                            list.withElement(KnolusUnion.FunctionParameterType(funcParam.name, value))
+                        }
+                    } else {
+                        KorneaResult.success(list.withElement(funcParam))
+                    }
                 }
             }.flatMap { params -> context.invokeMemberFunction(member, functionName, params.toTypedArray()) }
         }

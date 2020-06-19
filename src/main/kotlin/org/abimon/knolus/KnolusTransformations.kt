@@ -4,19 +4,23 @@ package org.abimon.knolus
 
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.*
+import org.abimon.kornea.errors.common.KorneaResult
+import org.abimon.kornea.errors.common.flatMap
+import org.abimon.kornea.errors.common.map
+import org.abimon.kornea.errors.common.successInline
 import kotlin.math.floor
 import kotlin.math.log
 import kotlin.math.roundToInt
 
 @ExperimentalUnsignedTypes
-typealias KnolusTransform<V, T, C> = suspend V.(context: C) -> KnolusResult<T>
+typealias KnolusTransform<V, T, C> = suspend V.(context: C) -> KorneaResult<T>
 typealias KnolusGenericTransform<V, T> = KnolusTransform<V, T, KnolusContext<in Any?>>
 
-inline fun <V, T> asGenericTransform(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T): KnolusGenericTransform<V, T> = { t -> KnolusResult.success(lambda(t)) }
-inline fun <V, T> asGenericTransformOrNull(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T?): KnolusGenericTransform<V, T> = { t -> KnolusResult.successOrEmpty(lambda(t)) }
+inline fun <V, T> asGenericTransform(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T): KnolusGenericTransform<V, T> = { t -> KorneaResult.success(lambda(t)) }
+inline fun <V, T> asGenericTransformOrNull(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T?): KnolusGenericTransform<V, T> = { t -> KorneaResult.successOrEmpty(lambda(t)) }
 
-inline fun <V, T, R, C: KnolusContext<in R>> asTransform(crossinline lambda: suspend V.(context: C) -> T): KnolusTransform<V, T, C> = { t -> KnolusResult.success(lambda(t)) }
-inline fun <V, T, R, C: KnolusContext<in R>> asTransformOrNull(crossinline lambda: suspend V.(context: C) -> T?): KnolusTransform<V, T, C> = { t -> KnolusResult.successOrEmpty(lambda(t)) }
+inline fun <V, T, R, C: KnolusContext<in R>> asTransform(crossinline lambda: suspend V.(context: C) -> T): KnolusTransform<V, T, C> = { t -> KorneaResult.success(lambda(t)) }
+inline fun <V, T, R, C: KnolusContext<in R>> asTransformOrNull(crossinline lambda: suspend V.(context: C) -> T?): KnolusTransform<V, T, C> = { t -> KorneaResult.successOrEmpty(lambda(t)) }
 
 sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>> {
     abstract val name: String
@@ -60,47 +64,47 @@ data class TypeParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out
 
 @ExperimentalUnsignedTypes
 object KnolusTransformations {
-    val NONE: KnolusGenericTransform<KnolusTypedValue, KnolusTypedValue> = { KnolusResult.knolusTyped(this) }
+    val NONE: KnolusGenericTransform<KnolusTypedValue, KnolusTypedValue> = { KorneaResult.successInline(this) }
     val TO_STRING: KnolusGenericTransform<KnolusTypedValue, String> = KnolusTypedValue::asString
     val TO_BOOLEAN: KnolusGenericTransform<KnolusTypedValue, Boolean> = KnolusTypedValue::asBoolean
     val TO_NUMBER: KnolusGenericTransform<KnolusTypedValue, Number> = KnolusTypedValue::asNumber
 
     val TO_CHAR: KnolusGenericTransform<KnolusTypedValue, Char> = { context ->
         when (this) {
-            is KnolusString -> if (string.isEmpty()) KnolusResult.empty() else KnolusResult.success(string.first())
-            is KnolusChar -> KnolusResult.success(char)
-            is KnolusNumericalType -> asNumber(context).flatMap { num -> KnolusResult.success(num.toChar()) }
-            else -> KnolusResult.empty()
+            is KnolusString -> if (string.isEmpty()) KorneaResult.empty() else KorneaResult.success(string.first())
+            is KnolusChar -> KorneaResult.success(char)
+            is KnolusNumericalType -> asNumber(context).flatMap { num -> KorneaResult.success(num.toChar()) }
+            else -> KorneaResult.empty()
         }
     }
-    val TO_INT: KnolusGenericTransform<KnolusTypedValue, Int> = { asNumber(it).flatMap { num -> KnolusResult.success(num.toInt()) } }
-    val TO_DOUBLE: KnolusGenericTransform<KnolusTypedValue, Double> = { asNumber(it).flatMap { num -> KnolusResult.success(num.toDouble()) } }
+    val TO_INT: KnolusGenericTransform<KnolusTypedValue, Int> = { asNumber(it).flatMap { num -> KorneaResult.success(num.toInt()) } }
+    val TO_DOUBLE: KnolusGenericTransform<KnolusTypedValue, Double> = { asNumber(it).flatMap { num -> KorneaResult.success(num.toDouble()) } }
 
     val TO_CHAR_ARRAY: KnolusGenericTransform<KnolusTypedValue, CharArray> = { context ->
         when (this) {
-            is KnolusString -> KnolusResult.success(string.toCharArray())
+            is KnolusString -> KorneaResult.success(string.toCharArray())
             is KnolusArray<*> -> {
                 when {
                     array.isArrayOf<KnolusChar>() -> {
                         val array = (array as Array<KnolusChar>)
-                        KnolusResult.success(CharArray(array.size) { array[it].char })
+                        KorneaResult.success(CharArray(array.size) { array[it].char })
                     }
                     array.isArrayOf<KnolusInt>() -> {
                         val array = (array as Array<KnolusInt>)
-                        KnolusResult.success(CharArray(array.size) { array[it].number.toChar() })
+                        KorneaResult.success(CharArray(array.size) { array[it].number.toChar() })
                     }
                     array.isArrayOf<KnolusDouble>() -> {
                         val array = (array as Array<KnolusDouble>)
-                        KnolusResult.success(CharArray(array.size) { array[it].number.roundToInt().toChar() })
+                        KorneaResult.success(CharArray(array.size) { array[it].number.roundToInt().toChar() })
                     }
-                    array.isArrayOf<KnolusString>() -> KnolusResult.success((array as Array<KnolusString>).flatMap { str -> str.string.toList() }.toCharArray())
-                    else -> KnolusResult.empty()
+                    array.isArrayOf<KnolusString>() -> KorneaResult.success((array as Array<KnolusString>).flatMap { str -> str.string.toList() }.toCharArray())
+                    else -> KorneaResult.empty()
                 }
             }
-            is KnolusChar -> KnolusResult.success(charArrayOf(char))
-            is KnolusConstants.Null -> KnolusResult.empty()
-            is KnolusConstants.Undefined -> KnolusResult.empty()
-            else -> KnolusResult.empty()
+            is KnolusChar -> KorneaResult.success(charArrayOf(char))
+            is KnolusConstants.Null -> KorneaResult.empty()
+            is KnolusConstants.Undefined -> KorneaResult.empty()
+            else -> KorneaResult.empty()
         }
     }
 
@@ -142,34 +146,34 @@ object KnolusTransformations {
 //    }
 
 
-    val LAZY_STRING_SELF: KnolusGenericTransform<KnolusLazyString, KnolusLazyString> = { KnolusResult.knolusTyped(this) }
-    val LAZY_STRING_TO_INNER: KnolusGenericTransform<KnolusLazyString, Array<KnolusUnion.StringComponent>> = { KnolusResult.success(components) }
+    val LAZY_STRING_SELF: KnolusGenericTransform<KnolusLazyString, KnolusLazyString> = { KorneaResult.successInline(this) }
+    val LAZY_STRING_TO_INNER: KnolusGenericTransform<KnolusLazyString, Array<KnolusUnion.StringComponent>> = { KorneaResult.success(components) }
     val LAZY_STRING_AS_STRING_ARRAY: KnolusGenericTransform<KnolusLazyString, Array<String>> = { context ->
-        val initial: KnolusResult<MutableList<String>> = KnolusResult.success(ArrayList())
+        val initial: KorneaResult<MutableList<String>> = KorneaResult.success(ArrayList())
 
         components.fold(initial) { acc, component ->
-            acc.flatMapOrSelf { list ->
+            acc.flatMap { list ->
                 when (component) {
                     is KnolusUnion.StringComponent.RawText ->
-                        KnolusResult.success(list.withElement(component.text))
+                        KorneaResult.success(list.withElement(component.text))
                     is KnolusUnion.StringComponent.VariableReference ->
                         context[component.variableName].flatMap { value ->
                             value.asString(context).map(list::withElement)
                         }
                 }
             }
-        }.flatMap { list -> KnolusResult.success(list.toTypedArray()) }
+        }.flatMap { list -> KorneaResult.success(list.toTypedArray()) }
     }
 
-    val VARIABLE_REFERENCE_SELF: KnolusGenericTransform<KnolusVariableReference, KnolusVariableReference> = { KnolusResult.knolusTyped(this) }
-    val VARIABLE_REFERENCE_TO_INNER: KnolusGenericTransform<KnolusVariableReference, String> = { KnolusResult.success(variableName) }
+    val VARIABLE_REFERENCE_SELF: KnolusGenericTransform<KnolusVariableReference, KnolusVariableReference> = { KorneaResult.successInline(this) }
+    val VARIABLE_REFERENCE_TO_INNER: KnolusGenericTransform<KnolusVariableReference, String> = { KorneaResult.success(variableName) }
 
     val MAX_HEX_STRING = String(CharArray((floor(log(Int.MAX_VALUE.toDouble(), 16.0)).toInt() shl 1) + 2) { '0' })
     val NUMBER_TO_HEX_STRING: KnolusGenericTransform<KnolusNumericalType, String> = {
         asNumber(it).flatMap { num ->
             val int = num.toInt()
 
-            KnolusResult.success(buildString {
+            KorneaResult.success(buildString {
                 append("0x")
                 if (log(int.toDouble(), 16.0).toInt() and 1 == 0) append('0')
                 append(int.toString(16))
@@ -190,7 +194,7 @@ object KnolusTransformations {
         return {
             val int = number.toInt()
 
-            KnolusResult.success(buildString {
+            KorneaResult.success(buildString {
                 append("0x")
                 append(MAX_HEX_STRING.slice(0 until (len - (log(int.toDouble(), 16.0).toInt()))))
                 append(int.toString(16))
@@ -312,15 +316,15 @@ fun nullTypeAsStringParameter(name: String? = null, default: String? = null) =
 fun undefinedTypeAsStringParameter(name: String? = null, default: String? = null) =
     KnolusConstants.Undefined.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
-suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> ParameterSpec<V, T, R, C>.transform(context: C, value: V): KnolusResult<T> =
+suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> ParameterSpec<V, T, R, C>.transform(context: C, value: V): KorneaResult<T> =
     transformation(value, context)
 
 suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(
     context: C,
     spec: ParameterSpec<V, T, R, C>,
-): KnolusResult<T> {
+): KorneaResult<T> {
     val value = get(spec.name.sanitiseFunctionIdentifier())
-                ?: return KnolusResult.success(spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory"))
+                ?: return KorneaResult.success(spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory"))
 
     return spec.transform(context, value as V)
 }
@@ -328,7 +332,7 @@ suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, Kn
 suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
     context: C,
     spec: ParameterSpec<V, T, R, C>,
-): KnolusResult<T> {
-    val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return KnolusResult.successOrEmpty(spec.default)
+): KorneaResult<T> {
+    val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return KorneaResult.successOrEmpty(spec.default)
     return spec.transform(context, value)
 }

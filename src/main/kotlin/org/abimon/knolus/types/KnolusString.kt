@@ -1,10 +1,10 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.toFormattedBoolean
 import org.abimon.knolus.toIntBaseN
 import org.abimon.knolus.toIntOrNullBaseN
+import org.abimon.kornea.errors.common.KorneaResult
 
 inline class KnolusString(val string: String) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusString> {
@@ -16,9 +16,9 @@ inline class KnolusString(val string: String) : KnolusTypedValue {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = KnolusResult.success(string)
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> =
-        if (string.contains('.')) KnolusResult.successOrEmpty(string.toDoubleOrNull()) else KnolusResult.successOrEmpty(string.toIntOrNullBaseN())
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(string)
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> =
+        if (string.contains('.')) KorneaResult.successOrEmpty(string.toDoubleOrNull()) else KorneaResult.successOrEmpty(string.toIntOrNullBaseN())
 
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = KnolusResult.success(string.toFormattedBoolean())
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(string.toFormattedBoolean())
 }

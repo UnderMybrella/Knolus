@@ -3,11 +3,12 @@ package org.abimon.knolus
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.errors.common.*
 
 @ExperimentalUnsignedTypes
 sealed class KnolusUnion {
     interface Action<T> {
-        suspend fun <R> run(context: KnolusContext<R>): KnolusResult<T>
+        suspend fun <R> run(context: KnolusContext<R>): KorneaResult<T>
     }
 
     sealed class StringComponent : KnolusUnion() {
@@ -99,10 +100,10 @@ sealed class KnolusUnion {
         private val initialVariableValue: KnolusTypedValue,
         val global: Boolean = false,
     ) : KnolusUnion(), Action<KnolusTypedValue?> {
-        override suspend fun <R> run(context: KnolusContext<R>): KnolusResult<KnolusTypedValue?> {
+        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusTypedValue?> {
             if (initialVariableValue is KnolusTypedValue.UnsureValue<*> && initialVariableValue.needsEvaluation(context)) {
-                val evaluated = initialVariableValue.evaluate(context).doOnFailure { error ->
-                    return KnolusResult.Error(
+                val evaluated = initialVariableValue.evaluate(context).getOrBreak { error ->
+                    return KorneaResult.errorAsIllegalState(
                         KnolusContext.FAILED_TO_SET_VARIABLE,
                         "Failed to set variable $variableName (evaluation failed)",
                         error
@@ -110,20 +111,20 @@ sealed class KnolusUnion {
                 }
 
                 val result = context.set(variableName, global, evaluated)
-                if (result.wasSuccessful())
-                    return KnolusResult.Success(evaluated)
+                if (result is KorneaResult.Success)
+                    return KorneaResult.successInline(evaluated)
 
-                return KnolusResult.Error(
+                return KorneaResult.errorAsIllegalState(
                     KnolusContext.FAILED_TO_SET_VARIABLE,
                     "Failed to set variable $variableName with value $evaluated",
                     result
                 )
             } else {
                 val result = context.set(variableName, global, initialVariableValue)
-                if (result.wasSuccessful())
-                    return KnolusResult.Success(initialVariableValue)
+                if (result is KorneaResult.Success)
+                    return KorneaResult.successInline(initialVariableValue)
 
-                return KnolusResult.Error(
+                return KorneaResult.errorAsIllegalState(
                     KnolusContext.FAILED_TO_SET_VARIABLE,
                     "Failed to set variable $variableName with value $initialVariableValue",
                     result
@@ -137,12 +138,12 @@ sealed class KnolusUnion {
         private val initialVariableValue: KnolusTypedValue,
         val global: Boolean = false,
     ) : KnolusUnion(), Action<KnolusTypedValue?> {
-        override suspend fun <R> run(context: KnolusContext<R>): KnolusResult<KnolusTypedValue?> =
+        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusTypedValue?> =
             context.containsWithResult(variableName)
                 .flatMap {
                     if (initialVariableValue is KnolusTypedValue.UnsureValue<*> && initialVariableValue.needsEvaluation(context)) {
-                        val evaluated = initialVariableValue.evaluate(context).doOnFailure { error ->
-                            return KnolusResult.Error(
+                        val evaluated = initialVariableValue.evaluate(context).getOrBreak { error ->
+                            return KorneaResult.errorAsIllegalState(
                                 KnolusContext.FAILED_TO_SET_VARIABLE,
                                 "Failed to set variable $variableName (evaluation failed)",
                                 error
@@ -150,10 +151,10 @@ sealed class KnolusUnion {
                         }
 
                         val result = context.set(variableName, global, evaluated)
-                        if (result.wasSuccessful())
-                            return@flatMap KnolusResult.Success(evaluated)
+                        if (result is KorneaResult.Success)
+                            return@flatMap KorneaResult.successInline(evaluated)
 
-                        return@flatMap KnolusResult.Error(
+                        return@flatMap KorneaResult.errorAsIllegalState(
                             KnolusContext.FAILED_TO_SET_VARIABLE,
                             "Failed to set variable $variableName with value $evaluated",
                             result
@@ -161,10 +162,11 @@ sealed class KnolusUnion {
                     } else {
                         return@flatMap context.set(variableName, global, initialVariableValue)
                     }
-                }.switchIfEmpty {
-                    KnolusResult.Error(
+                }.switchIfEmpty { empty ->
+                    KorneaResult.errorAsIllegalState(
                         KnolusContext.UNDECLARED_VARIABLE,
-                        "Undeclared variable $variableName"
+                        "Undeclared variable $variableName",
+                        empty
                     )
                 }
     }
@@ -183,7 +185,7 @@ sealed class KnolusUnion {
             parameters: Map<String, KnolusTypedValue>,
         ): KnolusTypedValue? = (body?.runDirect(context, parameters) as? ScopeResult.Returned<*>)?.value
 
-        override suspend fun <R> run(context: KnolusContext<R>): KnolusResult<KnolusFunction<KnolusTypedValue?, R, *>> =
+        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusFunction<KnolusTypedValue?, R, *>> =
             context.register(
                 functionName, KnolusFunction<KnolusTypedValue?, R, KnolusContext<out R>>(
                     Array(parameterNames.size) {

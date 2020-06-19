@@ -2,6 +2,9 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
+import org.abimon.kornea.errors.common.KorneaResult
+import org.abimon.kornea.errors.common.flatMap
+import org.abimon.kornea.errors.common.map
 
 @ExperimentalUnsignedTypes
 data class KnolusLazyFunctionCall(val name: String, val parameters: Array<KnolusUnion.FunctionParameterType>) :
@@ -15,16 +18,18 @@ data class KnolusLazyFunctionCall(val name: String, val parameters: Array<Knolus
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyFunctionCall>
         get() = TypeInfo
 
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> =
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
         run(context)
 
-    override suspend fun <T> run(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> {
-        return parameters.fold(KnolusResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, funcParam ->
-            acc.flatMapOrSelf { list ->
+    override suspend fun <T> run(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> {
+        return parameters.fold(KorneaResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, funcParam ->
+            acc.flatMap { list ->
                 if (funcParam.parameter is KnolusTypedValue.UnsureValue<*> && funcParam.parameter.needsEvaluation(context))
-                    funcParam.parameter.evaluate(context).map { value -> list.withElement(KnolusUnion.FunctionParameterType(funcParam.name, value)) }
+                    funcParam.parameter.evaluate(context).map { value ->
+                        list.withElement(KnolusUnion.FunctionParameterType(funcParam.name, value))
+                    }
                 else
-                    KnolusResult.success(list.withElement(funcParam))
+                    KorneaResult.success(list.withElement(funcParam))
             }
         }.flatMap { params -> context.invokeFunction(name, params.toTypedArray()) }
     }

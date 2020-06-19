@@ -3,6 +3,7 @@ package org.abimon.knolus.modules.functionregistry
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.errors.common.KorneaResult
 
 fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiFunction(
     functionName: String,
@@ -105,7 +106,7 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiFunct
 fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiResultFunction(
     functionName: String,
     parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: KnolusResult<P>) -> KnolusTypedValue,
+    func: suspend (context: C, parameter: KorneaResult<P>) -> KnolusTypedValue,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
@@ -118,7 +119,7 @@ fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiResultFunction
 fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiResultFunctionWithoutReturn(
     functionName: String,
     parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: KnolusResult<P>) -> Unit,
+    func: suspend (context: C, parameter: KorneaResult<P>) -> Unit,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
@@ -132,7 +133,7 @@ fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiResultFun
     functionName: String,
     firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
     secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> KnolusTypedValue,
+    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
@@ -148,7 +149,7 @@ fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiResultFun
     functionName: String,
     firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
     secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit,
+    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
@@ -165,7 +166,7 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiResul
     firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
     secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
     thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> KnolusTypedValue,
+    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->
@@ -184,7 +185,7 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiResul
     firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
     secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
     thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> Unit,
+    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->

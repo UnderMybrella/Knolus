@@ -1,9 +1,8 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
-import org.abimon.knolus.flatMap
-import org.abimon.knolus.getOrElse
+import org.abimon.kornea.errors.common.KorneaResult
+import org.abimon.kornea.errors.common.flatMap
 
 data class KnolusPropertyReference(val variableName: String, val propertyName: String) : KnolusTypedValue.RuntimeValue<KnolusTypedValue> {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference> {
@@ -16,11 +15,11 @@ data class KnolusPropertyReference(val variableName: String, val propertyName: S
         get() = TypeInfo
 
     @ExperimentalUnsignedTypes
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> = context[variableName].flatMap { member ->
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> = context[variableName].flatMap { member ->
         context.invokeMemberPropertyGetter(member, propertyName)
     }
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = evaluate(context).flatMap { it.asString(context) }
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = evaluate(context).flatMap { it.asString(context) }
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
 }

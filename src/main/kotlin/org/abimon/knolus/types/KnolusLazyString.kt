@@ -2,6 +2,9 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
+import org.abimon.kornea.errors.common.KorneaResult
+import org.abimon.kornea.errors.common.flatMap
+import org.abimon.kornea.errors.common.map
 
 data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>) :
     KnolusTypedValue.RuntimeValue<KnolusString> {
@@ -15,14 +18,12 @@ data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>) 
         get() = TypeInfo
 
     @ExperimentalUnsignedTypes
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusString> {
-        val initial: KnolusResult<MutableList<String>> = KnolusResult.success(ArrayList())
-
-        return components.fold(initial) { acc, component ->
-            acc.flatMapOrSelf { list ->
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusString> =
+        components.fold(KorneaResult.foldingMutableListOf<String>()) { acc, component ->
+            acc.flatMap { list ->
                 when (component) {
                     is KnolusUnion.StringComponent.RawText ->
-                        KnolusResult.success(list.withElement(component.text))
+                        KorneaResult.success(list.withElement(component.text))
                     is KnolusUnion.StringComponent.VariableReference ->
                         context[component.variableName].flatMap { value ->
                             value.asString(context).map(list::withElement)
@@ -30,22 +31,21 @@ data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>) 
                 }
             }
         }.map { list -> KnolusString(list.joinToString("")) }
-    }
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> =
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> =
         evaluate(context).map(KnolusString::string)
 
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> =
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> =
         evaluate(context).flatMap { knolusString ->
             val str = knolusString.string
             if (str.contains('.'))
-                KnolusResult.success(str.toDouble())
+                KorneaResult.success(str.toDouble())
             else
-                KnolusResult.success(str.toIntBaseN())
+                KorneaResult.success(str.toIntBaseN())
         }
 
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> =
-        evaluate(context).flatMap { knolusString -> KnolusResult.success(knolusString.string.toFormattedBoolean()) }
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> =
+        evaluate(context).flatMap { knolusString -> KorneaResult.success(knolusString.string.toFormattedBoolean()) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

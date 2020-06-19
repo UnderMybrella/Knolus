@@ -3,6 +3,7 @@ package org.abimon.knolus.types
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusArray.TypeInfo.evaluateOrSelf
+import org.abimon.kornea.errors.common.*
 
 sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusArray<*>> {
@@ -22,11 +23,11 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
         fun <T : KnolusTypedValue> ofStable(array: Array<T>): KnolusArray<T> = StableArray(array)
         fun <T : KnolusTypedValue.UnsureValue<*>> ofUnsure(array: Array<T>): KnolusArray<T> = UnsureArray(array)
 
-        suspend fun <T> KnolusArray<*>.evaluateOrSelf(context: KnolusContext<T>): KnolusResult<KnolusArray<*>> =
+        suspend fun <T> KnolusArray<*>.evaluateOrSelf(context: KnolusContext<T>): KorneaResult<KnolusArray<*>> =
             when (this) {
                 is RuntimeArray<*> -> evaluate(context)
-                is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else KnolusResult.knolusTyped(this)
-                else -> KnolusResult.knolusTyped(this)
+                is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.successInline(this)
+                else -> KorneaResult.successInline(this)
             }
 
         override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusArray<*>
@@ -58,21 +59,23 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
         override suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean =
             array.any { t -> t is KnolusTypedValue.UnsureValue<*> && t.needsEvaluation(context) }
 
-        override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusArray<KnolusTypedValue>> {
-            val initial: KnolusResult<Array<KnolusTypedValue?>> = KnolusResult.success(arrayOfNulls(array.size))
+        override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusArray<KnolusTypedValue>> {
+            val initial: KorneaResult<Array<KnolusTypedValue?>> = KorneaResult.success(arrayOfNulls(array.size))
 
             return array.indices.fold(initial) { acc, i ->
-                acc.flatMapOrSelf { evalArray ->
+                acc.flatMap { evalArray ->
                     val element = this.array[i]
 
                     if (element is KnolusTypedValue.UnsureValue<*>) {
                         element.evaluateOrSelf(context)
-                            .doOnSuccess { value -> evalArray[i] = value }
-                            .cast()
+                            .map { value ->
+                                evalArray[i] = value
+                                evalArray
+                            }
                     } else {
                         evalArray[i] = element
 
-                        null
+                        KorneaResult.successInline(evalArray)
                     }
                 }
             }.map { evalArray -> of(evalArray.requireNoNulls()) }
@@ -99,31 +102,33 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
 
     private data class RuntimeArray<T : KnolusTypedValue>(override val array: Array<T>) : KnolusArray<T>(array),
         KnolusTypedValue.RuntimeValue<KnolusArray<KnolusTypedValue>> {
-        override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusArray<KnolusTypedValue>> {
-            val initial: KnolusResult<Array<KnolusTypedValue?>> = KnolusResult.success(arrayOfNulls(array.size))
+        override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusArray<KnolusTypedValue>> {
+            val initial: KorneaResult<Array<KnolusTypedValue?>> = KorneaResult.success(arrayOfNulls(array.size))
 
             return array.indices.fold(initial) { acc, i ->
-                acc.flatMapOrSelf { evalArray ->
+                acc.flatMap { evalArray ->
                     val element = this.array[i]
 
                     if (element is KnolusTypedValue.UnsureValue<*>) {
                         element.evaluateOrSelf(context)
-                            .doOnSuccess { value -> evalArray[i] = value }
-                            .cast()
+                            .map { value ->
+                                evalArray[i] = value
+                                evalArray
+                            }
                     } else {
                         evalArray[i] = element
 
-                        null
+                        KorneaResult.successInline(evalArray)
                     }
                 }
             }.map { evalArray -> of(evalArray.requireNoNulls()) }
         }
 
-        override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = super<KnolusTypedValue.RuntimeValue>.asBoolean(context)
+        override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = super<KnolusTypedValue.RuntimeValue>.asBoolean(context)
 
-        override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> = super<KnolusTypedValue.RuntimeValue>.asNumber(context)
+        override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = super<KnolusTypedValue.RuntimeValue>.asNumber(context)
 
-        override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = super<KnolusTypedValue.RuntimeValue>.asString(context)
+        override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = super<KnolusTypedValue.RuntimeValue>.asString(context)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -144,24 +149,22 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusArray<*>>
         get() = TypeInfo
 
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> =
-        KnolusResult.success(array.isNotEmpty())
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> =
+        KorneaResult.success(array.isNotEmpty())
 
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> =
-        KnolusResult.success(array.size)
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> =
+        KorneaResult.success(array.size)
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> {
-        val initial = KnolusResult.success(StringBuilder().apply {
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> {
+        val initial = KorneaResult.success(StringBuilder().apply {
             append("arrayOf(")
         })
 
         return array.indices.fold(initial) { acc, i ->
-            acc.flatMapOrSelf { builder ->
+            acc.flatMap { builder ->
                 if (i > 0) builder.append(", ")
 
-                array[i].asString(context)
-                    .doOnSuccess(builder::append)
-                    .cast()
+                array[i].asString(context).map(builder::append)
             }
         }.map { builder ->
             builder.append(")")

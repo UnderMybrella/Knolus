@@ -2,6 +2,7 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
+import org.abimon.kornea.errors.common.*
 
 data class KnolusLazyExpression(
     val startValue: KnolusTypedValue,
@@ -16,25 +17,22 @@ data class KnolusLazyExpression(
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyExpression>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = evaluate(context).flatMap { it.asString(context) }
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = evaluate(context).flatMap { it.asString(context) }
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
 
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> {
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> {
         var value: KnolusTypedValue =
             if (this.startValue is KnolusTypedValue.UnsureValue<*> && this.startValue.needsEvaluation(context)) {
-                this.startValue.evaluate(context).doOnFailure { return it.cast() }
+                this.startValue.evaluate(context).getOrBreak { return it.asType() }
             } else {
                 this.startValue
             }
 
         val remainingOps: MutableList<Pair<ExpressionOperator, KnolusTypedValue>> = ArrayList(this.ops.size)
         remainingOps.addAll(this.ops.map { op ->
-            if (op.second is KnolusTypedValue.UnsureValue<*> && (op.second as KnolusTypedValue.UnsureValue<*>).needsEvaluation(
-                    context
-                )
-            )
-                Pair(op.first, (op.second as KnolusTypedValue.UnsureValue<*>).evaluate(context).doOnFailure { return it.cast() })
+            if (op.second is KnolusTypedValue.UnsureValue<*> && (op.second as KnolusTypedValue.UnsureValue<*>).needsEvaluation(context))
+                Pair(op.first, (op.second as KnolusTypedValue.UnsureValue<*>).evaluate(context).getOrBreak { return it.cast() })
             else
                 op
         })
@@ -105,6 +103,6 @@ data class KnolusLazyExpression(
 
         //Ternary / Elvis
 
-        return KnolusResult.knolusTyped(value)
+        return KorneaResult.successInline(value)
     }
 }

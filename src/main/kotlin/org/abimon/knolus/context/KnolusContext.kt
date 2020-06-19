@@ -7,6 +7,7 @@ import org.abimon.knolus.restrictions.KnolusRestriction
 import org.abimon.knolus.restrictions.canAskAsParentForFunction
 import org.abimon.knolus.restrictions.canAskAsParentForVariable
 import org.abimon.knolus.types.*
+import org.abimon.kornea.errors.common.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -34,57 +35,57 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
     protected val functionRegistry: MutableMap<String, MutableList<KnolusFunction<KnolusTypedValue?, R, *>>> =
         HashMap()
 
-    operator fun get(key: String): KnolusResult<KnolusTypedValue> =
+    operator fun get(key: String): KorneaResult<KnolusTypedValue> =
         restrictions.canGetVariable(this, key).flatMap {
             val value = variableRegistry[key]
 
             if (value == null) {
-                parent?.canAskAsParentForVariable(this, key)?.flatMap { parent[key] } ?: KnolusResult.empty()
+                parent?.canAskAsParentForVariable(this, key)?.flatMap { parent[key] } ?: KorneaResult.empty()
             } else {
-                KnolusResult.knolusTyped(value)
+                KorneaResult.successInline(value)
             }
         }
 
-    operator fun set(key: String, global: Boolean = false, value: KnolusTypedValue): KnolusResult<KnolusTypedValue?> {
-        val parentResult: KnolusResult<KnolusTypedValue?>?
+    operator fun set(key: String, global: Boolean = false, value: KnolusTypedValue): KorneaResult<KnolusTypedValue?> {
+        val parentResult: KorneaResult<KnolusTypedValue?>?
         if (global && parent != null) {
             parentResult = parent.set(key, global, value)
-            if (parentResult is KnolusResult.Successful) return parentResult
+            if (parentResult is KorneaResult.Success) return parentResult
         } else {
             parentResult = null
         }
 
         return restrictions.canSetVariable(this, key, value, parentResult)
-            .flatMap { KnolusResult.knolusTyped(variableRegistry.put(key, value)) }
+            .flatMap { KorneaResult.successInline(variableRegistry.put(key, value)) }
             .switchIfHasCause { result ->
-                KnolusResult.Error(
+                KorneaResult.errorAsIllegalArgument(
                     FAILED_TO_SET_VARIABLE,
                     "Failed to locally set $key to $value",
-                    result.mapRootCausedBy(parentResult)
+                    result.mapFailureRootCause(parentResult)
                 )
             }
     }
 
-    fun containsWithResult(key: String): KnolusResult<R> =
+    fun containsWithResult(key: String): KorneaResult<R> =
         restrictions.canGetVariable(this, key).filter { key in variableRegistry }
             .switchIfFailure {
-                parent?.canAskAsParentForVariable(this, key)?.filter { parent.contains(key) } ?: KnolusResult.empty()
+                parent?.canAskAsParentForVariable(this, key)?.filter { parent.contains(key) } ?: KorneaResult.empty()
             }
 
     operator fun contains(key: String): Boolean =
-        containsWithResult(key).wasSuccessful()
+        containsWithResult(key) is KorneaResult.Success
 
     fun register(
         name: String,
         func: KnolusFunction<KnolusTypedValue?, R, *>,
         global: Boolean = false,
-    ): KnolusResult<KnolusFunction<KnolusTypedValue?, R, *>> {
+    ): KorneaResult<KnolusFunction<KnolusTypedValue?, R, *>> {
         val sanitisedName = name.sanitiseFunctionIdentifier()
 
-        val parentResult: KnolusResult<KnolusFunction<KnolusTypedValue?, R, *>>?
+        val parentResult: KorneaResult<KnolusFunction<KnolusTypedValue?, R, *>>?
         if (global && parent != null) {
             parentResult = parent.register(sanitisedName, func, global)
-            if (parentResult is KnolusResult.Successful) return parentResult
+            if (parentResult is KorneaResult.Success) return parentResult
         } else {
             parentResult = null
         }
@@ -92,10 +93,10 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
         return restrictions.canRegisterFunction(this, sanitisedName, func, parentResult)
             .map { func.addTo(functionRegistry.computeIfAbsent(sanitisedName) { ArrayList() }) }
             .switchIfHasCause { result ->
-                KnolusResult.Error(
+                KorneaResult.errorAsIllegalState(
                     FAILED_TO_REGISTER_FUNCTION,
                     "Failed to register $name ($func)",
-                    result.mapRootCausedBy(parentResult)
+                    result.mapFailureRootCause(parentResult)
                 )
             }
     }
@@ -116,9 +117,9 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
         member: KnolusTypedValue,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-    ): KnolusResult<KnolusTypedValue> {
+    ): KorneaResult<KnolusTypedValue> {
         restrictions.canAskForMemberFunction(this, member, functionName, functionParameters).doOnFailure { causedBy ->
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to member function", causedBy)
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to member function", causedBy)
         }
 
         val params = arrayOfNulls<KnolusUnion.FunctionParameterType>(functionParameters.size + 1)
@@ -128,7 +129,7 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
         @Suppress("UNCHECKED_CAST")
         params as Array<KnolusUnion.FunctionParameterType>
 
-        return member.typeInfo.getMemberFunctionNames(functionName).fold(KnolusResult.empty()) { acc, funcName ->
+        return member.typeInfo.getMemberFunctionNames(functionName).fold(KorneaResult.empty()) { acc, funcName ->
             acc.switchIfEmpty { invokeFunction(funcName, params) }
         }
     }
@@ -136,14 +137,14 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
     suspend fun invokeMemberPropertyGetter(
         member: KnolusTypedValue,
         propertyName: String,
-    ): KnolusResult<KnolusTypedValue> {
+    ): KorneaResult<KnolusTypedValue> {
         restrictions.canAskForMemberPropertyGetter(this, member, propertyName).doOnFailure { causedBy ->
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to member property", causedBy)
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to member property", causedBy)
         }
 
         val params = arrayOf(KnolusUnion.FunctionParameterType("self", member))
 
-        return member.typeInfo.getMemberPropertyGetterNames(propertyName).fold(KnolusResult.empty()) { acc, funcName ->
+        return member.typeInfo.getMemberPropertyGetterNames(propertyName).fold(KorneaResult.empty()) { acc, funcName ->
             acc.switchIfEmpty { invokeFunction(funcName, params) }
         }
     }
@@ -152,9 +153,9 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
-    ): KnolusResult<KnolusTypedValue> {
+    ): KorneaResult<KnolusTypedValue> {
         restrictions.canAskForOperatorFunction(this, operator, a, b).doOnFailure { causedBy ->
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to operator function", causedBy)
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to operator function", causedBy)
         }
 
         val params = arrayOf(
@@ -162,7 +163,7 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
             KnolusUnion.FunctionParameterType("b", b)
         )
 
-        return a.typeInfo.getMemberOperatorNames(operator).fold(KnolusResult.empty()) { acc, funcName ->
+        return a.typeInfo.getMemberOperatorNames(operator).fold(KorneaResult.empty()) { acc, funcName ->
             acc.switchIfEmpty { invokeFunction(funcName, params) }
         }
     }
@@ -170,7 +171,7 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
     suspend fun invokeFunction(
         functionName: String,
         vararg parameters: Pair<String, KnolusTypedValue>,
-    ): KnolusResult<KnolusTypedValue> =
+    ): KorneaResult<KnolusTypedValue> =
         invokeFunction(functionName, parameters.mapToArray { (k, v) ->
             KnolusUnion.FunctionParameterType(k, v)
         })
@@ -178,7 +179,7 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
     suspend fun invokeFunction(
         functionName: String,
         vararg parameters: KnolusTypedValue,
-    ): KnolusResult<KnolusTypedValue> =
+    ): KorneaResult<KnolusTypedValue> =
         invokeFunction(functionName, parameters.mapToArray { param ->
             KnolusUnion.FunctionParameterType(null, param)
         })
@@ -187,17 +188,16 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
         selfContext: KnolusContext<R> = this,
-    ): KnolusResult<KnolusTypedValue> {
+    ): KorneaResult<KnolusTypedValue> {
         restrictions.canAskForFunction(this, functionName, functionParameters).doOnFailure { causedBy ->
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
         }
 
-        var collectiveCause: KnolusResult<KnolusTypedValue>? = null
+        var collectiveCause: KorneaResult<KnolusTypedValue>? = null
 
         functionRegistry[functionName.sanitiseFunctionIdentifier()]?.forEach functionList@{ function ->
             restrictions.canTryFunction(this, functionName, functionParameters, function).doOnFailure { causedBy ->
-                collectiveCause = (collectiveCause as? KnolusResult.WithCause<KnolusTypedValue, *>)?.withCause(causedBy)
-                                  ?: collectiveCause
+                collectiveCause = (collectiveCause as? KorneaResult.WithCause)?.withCause(causedBy) ?: collectiveCause
             }
 
             val unmappedParams = function.parameters.toMutableList()
@@ -230,11 +230,11 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
             }
 
             val result = selfContext.invokeFunction(function, passedParams)
-            if (result.wasSuccessful()) return result
+            if (result is KorneaResult.Success) return result
             if (collectiveCause == null)
                 collectiveCause = result
             else
-                collectiveCause = (collectiveCause as? KnolusResult.WithCause<KnolusTypedValue, *>)?.withCause(result) ?: collectiveCause
+                collectiveCause = (collectiveCause as? KorneaResult.WithCause)?.withCause(result as KorneaResult.Failure) ?: collectiveCause
 //
 //            if (!restrictions.canRunFunction(this, function, passedParams)) {
 //                functionRunDenied = true
@@ -242,13 +242,13 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
 //            }
 //            val subroutineRestrictions = restrictions.createSubroutineRestrictions(this, function, passedParams)
 //
-//            return KnolusResult.Success(
+//            return KorneaResult.Success(
 //                function.suspendInvoke(KnolusFunctionContext(function, this, subroutineRestrictions), passedParams)
 //                    ?: KnolusConstants.Null
 //            )
         }
 
-        if (parent == null) return collectiveCause ?: KnolusResult.empty()
+        if (parent == null) return collectiveCause ?: KorneaResult.empty()
 
         return parent.canAskAsParentForFunction(this, functionName, functionParameters).flatMap {
             parent.invokeFunction(functionName, functionParameters, selfContext)
@@ -263,16 +263,16 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
     suspend fun invokeFunction(
         function: KnolusFunction<KnolusTypedValue?, R, *>,
         parameters: Map<String, KnolusTypedValue>,
-    ): KnolusResult<KnolusTypedValue> {
+    ): KorneaResult<KnolusTypedValue> {
         restrictions.canRunFunction(this, function, parameters).doOnFailure { causedBy ->
-            return KnolusResult.Error(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to function", causedBy)
         }
 
         return restrictions.createSubroutineRestrictions(this, function, parameters)
             .flatMap { subroutineRestrictions ->
                 function as KnolusFunction<KnolusTypedValue?, R, KnolusContext<out R>>
 
-                KnolusResult.knolusTyped(
+                KorneaResult.successInline(
                     function.suspendInvoke(KnolusFunctionContext(function, this, subroutineRestrictions), parameters)
                     ?: KnolusConstants.Null
                 )

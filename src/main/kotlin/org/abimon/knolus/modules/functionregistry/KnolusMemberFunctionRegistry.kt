@@ -3,6 +3,7 @@ package org.abimon.knolus.modules.functionregistry
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.errors.common.KorneaResult
 
 fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (context: C, self: P0) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
@@ -212,7 +213,7 @@ fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T?, R, C>.setMemb
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> T): KnolusFunctionBuilder<T, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KorneaResult<P1>) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(parameterSpec)
 
@@ -224,7 +225,7 @@ fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T, R, C>.setM
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, parameterSpec: ParameterSpec<*, P1, in R, C>, func: suspend (context: C, self: P0, parameter: KorneaResult<P1>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(parameterSpec)
 
@@ -238,7 +239,7 @@ fun <T, R, C : KnolusContext<out R>, P0, P1> KnolusFunctionBuilder<T?, R, C>.set
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> T): KnolusFunctionBuilder<T, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
@@ -252,7 +253,7 @@ fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T, R, C>.
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
@@ -268,7 +269,7 @@ fun <T, R, C : KnolusContext<out R>, P0, P1, P2> KnolusFunctionBuilder<T?, R, C>
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> T): KnolusFunctionBuilder<T, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T, R, C>.setMemberResultFunction(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
@@ -284,7 +285,7 @@ fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T, R,
     }
 }
 
-fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>, thirdParameter: KnolusResult<P3>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
+fun <T, R, C : KnolusContext<out R>, P0, P1, P2, P3> KnolusFunctionBuilder<T?, R, C>.setMemberResultFunctionWithoutReturn(typeSpec: ParameterSpec<*, P0, in R, C>, firstParameterSpec: ParameterSpec<*, P1, in R, C>, secondParameterSpec: ParameterSpec<*, P2, in R, C>, thirdParameterSpec: ParameterSpec<*, P3, in R, C>, func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> Unit): KnolusFunctionBuilder<T?, R, C> {
     addParameter(typeSpec)
     addParameter(firstParameterSpec)
     addParameter(secondParameterSpec)
@@ -328,7 +329,7 @@ fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberResultF
     typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
     parameterSpec: ParameterSpec<*, P1, in R, C>,
-    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> KnolusTypedValue,
+    func: suspend (context: C, self: P0, parameter: KorneaResult<P1>) -> KnolusTypedValue,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder<R, C>()
@@ -340,7 +341,7 @@ fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMemberResultF
     typeSpec: ParameterSpec<*, P0, in R, C>,
     functionName: String,
     parameterSpec: ParameterSpec<*, P1, in R, C>,
-    func: suspend (context: C, self: P0, parameter: KnolusResult<P1>) -> Unit,
+    func: suspend (context: C, self: P0, parameter: KorneaResult<P1>) -> Unit,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder<R, C>()
@@ -353,7 +354,7 @@ fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberRes
     functionName: String,
     firstParameterSpec: ParameterSpec<*, P1, in R, C>,
     secondParameterSpec: ParameterSpec<*, P2, in R, C>,
-    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> KnolusTypedValue,
+    func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> KnolusTypedValue,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder<R, C>()
@@ -366,7 +367,7 @@ fun <R, C : KnolusContext<out R>, P0, P1, P2> KnolusContext<R>.registerMemberRes
     functionName: String,
     firstParameterSpec: ParameterSpec<*, P1, in R, C>,
     secondParameterSpec: ParameterSpec<*, P2, in R, C>,
-    func: suspend (context: C, self: P0, firstParameter: KnolusResult<P1>, secondParameter: KnolusResult<P2>) -> Unit,
+    func: suspend (context: C, self: P0, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> Unit,
 ) = register(
     typeSpec.getMemberFunctionName(functionName),
     functionBuilder<R, C>()

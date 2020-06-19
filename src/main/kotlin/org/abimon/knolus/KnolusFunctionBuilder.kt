@@ -3,6 +3,7 @@ package org.abimon.knolus
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusObject
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.errors.common.KorneaResult
 
 sealed class KnolusDeclaredFunctionParameter<T : KnolusTypedValue> {
     abstract val name: String
@@ -154,7 +155,7 @@ fun <R, C: KnolusContext<out R>, T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedV
 fun <T, R, C: KnolusContext<out R>, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T, R, C>.setOperatorResultFunction(
     typeSpec: ParameterSpec<V0, P0, in R, C>,
     parameterSpec: ParameterSpec<V1, P1, in R, C>,
-    func: suspend (context: C, a: KnolusResult<P0>, b: KnolusResult<P1>) -> T,
+    func: suspend (context: C, a: KorneaResult<P0>, b: KorneaResult<P1>) -> T,
 ): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec.withName("a"))
     addParameter(parameterSpec.withName("b"))

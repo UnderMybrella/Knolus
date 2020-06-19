@@ -1,7 +1,7 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
+import org.abimon.kornea.errors.common.KorneaResult
 
 interface KnolusNumericalType : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusNumericalType> {
@@ -12,9 +12,9 @@ interface KnolusNumericalType : KnolusTypedValue {
 
     val number: Number
 
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KnolusResult<Number> = KnolusResult.success(number)
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = KnolusResult.success(number.toString())
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = KnolusResult.success(number != 0)
+    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = KorneaResult.success(number)
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(number.toString())
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(number != 0)
 }
 
 inline class KnolusInt(override val number: Int) : KnolusNumericalType {
@@ -52,6 +52,6 @@ inline class KnolusChar(val char: Char) : KnolusNumericalType {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusChar>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KnolusResult<String> = KnolusResult.success(char.toString())
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KnolusResult<Boolean> = KnolusResult.success(char != '\u0000')
+    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(char.toString())
+    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(char != '\u0000')
 }

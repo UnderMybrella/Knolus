@@ -1,8 +1,7 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.KnolusResult
 import org.abimon.knolus.context.KnolusContext
-import org.abimon.knolus.flatMap
+import org.abimon.kornea.errors.common.KorneaResult
 
 /**
  * A reference to a variable defined by either the environment, or the user.
@@ -18,5 +17,5 @@ data class KnolusVariableReference(val variableName: String) : KnolusTypedValue.
         get() = TypeInfo
 
     @ExperimentalUnsignedTypes
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KnolusResult<KnolusTypedValue> = context[variableName]
+    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> = context[variableName]
 }
