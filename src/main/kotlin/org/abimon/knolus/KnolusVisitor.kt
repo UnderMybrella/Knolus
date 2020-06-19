@@ -11,12 +11,13 @@ import org.abimon.knolus.types.*
 import org.abimon.kornea.errors.common.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.TerminalNode
 
 @ExperimentalUnsignedTypes
 /** TODO: Keep KorneaResult in mind, see how allocs do */
-class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: KnolusParser) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
+class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Recognizer<*, *>) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
     companion object {
         const val NO_VALID_VARIABLE_VALUE = 0x1200
         const val NO_VALID_NUMBER_TYPE = 0x1201
