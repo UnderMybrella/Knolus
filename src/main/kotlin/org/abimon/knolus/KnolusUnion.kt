@@ -11,7 +11,7 @@ sealed class KnolusUnion {
         suspend fun <R> run(context: KnolusContext<R>): KorneaResult<T>
     }
 
-    abstract class UnionAction<T>: Action<T>
+    abstract class UnionAction<T>: KnolusUnion(), Action<T>
 
     sealed class StringComponent : KnolusUnion() {
         data class RawText(val text: String) : StringComponent()
