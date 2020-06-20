@@ -21,7 +21,7 @@ import org.kornea.toolkit.common.switchIfNull
 /**
  * A version of [KnolusVisitor] that's capable of handling arbitrary parser input
  */
-class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, val parser: Recognizer<*, *>, val blueprint: ParserBlueprint<ParserRuleContext>) : TransKnolusParserVisitor<KnolusUnion> {
+class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, val parser: Recognizer<*, *>, val blueprint: ParserBlueprint<ParserRuleContext>) : TransKnolusParserVisitor {
     companion object {
         const val NO_VALID_VARIABLE_VALUE = 0x1200
         const val NO_VALID_NUMBER_TYPE = 0x1201
@@ -115,8 +115,8 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
 //        }
     }
 
-    override fun visitDeclareFunction(ctx: DeclareFunctionBlueprint): KorneaResult<KnolusUnion> = KorneaResult.thrown(NotImplementedError("Function declarations are not yet implemented"))
-    override fun visitDeclareFunctionBody(ctx: DeclareFunctionBodyBlueprint): KorneaResult<KnolusUnion> = KorneaResult.thrown(NotImplementedError("Function declarations are not yet implemented"))
+    override fun visitDeclareFunction(ctx: DeclareFunctionBlueprint): KorneaResult<KnolusUnion.FunctionDeclaration> = KorneaResult.thrown(NotImplementedError("Function declarations are not yet implemented"))
+    override fun visitDeclareFunctionBody(ctx: DeclareFunctionBodyBlueprint): KorneaResult<KnolusUnion.ScopeType> = KorneaResult.thrown(NotImplementedError("Function declarations are not yet implemented"))
 
     override fun visitDeclareVariable(ctx: DeclareVariableBlueprint): KorneaResult<KnolusUnion.DeclareVariableAction> {
         if (restrictions.canVisitVariableDeclaration(ctx) !is KorneaResult.Success<*>)
@@ -138,7 +138,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
             }
     }
 
-    override fun visitSetVariableValue(ctx: AssignVariableBlueprint): KorneaResult<KnolusUnion> {
+    override fun visitSetVariableValue(ctx: AssignVariableBlueprint): KorneaResult<KnolusUnion.AssignVariableAction> {
         if (restrictions.canVisitVariableAssignment(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(VARIABLE_ASSIGN_VISIT_DENIED, "Restriction denied variable assign visit")
 
@@ -469,8 +469,6 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         if (restrictions.canVisitArrayContents(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(ARRAY_CONTENTS_VISIT_DENIED, "Restriction denied array contents visit")
 
-        val initial: KorneaResult<MutableList<KnolusTypedValue>> = KorneaResult.success(ArrayList())
-
         return ctx.getArrayElements(blueprint).foldResults { element ->
             visit(element).filterToInstance<KnolusUnion.VariableValue<KnolusTypedValue>>().map(KnolusUnion.VariableValue<KnolusTypedValue>::value)
         }.map { list ->
@@ -511,7 +509,7 @@ fun parseKnolusTransScope(text: String, restrictions: KnolusTransVisitorRestrict
 
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
-fun <P: Parser, R, V: ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(text: String, restrictions: KnolusTransVisitorRestrictions<*>, lexerInit: (CharStream) -> Lexer, parserInit: (TokenStream) -> P, visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor<KnolusUnion>) -> V, selectRule: (parser: P, visitor: V) -> KorneaResult<R>): KorneaResult<R> {
+fun <P: Parser, R, V: ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(text: String, restrictions: KnolusTransVisitorRestrictions<*>, lexerInit: (CharStream) -> Lexer, parserInit: (TokenStream) -> P, visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor) -> V, selectRule: (parser: P, visitor: V) -> KorneaResult<R>): KorneaResult<R> {
     try {
         val charStream = CharStreams.fromString(text)
         val lexer = lexerInit(charStream)

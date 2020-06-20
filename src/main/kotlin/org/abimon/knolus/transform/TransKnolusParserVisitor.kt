@@ -2,13 +2,15 @@ package org.abimon.knolus.transform
 
 import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.knolus.Knolus
+import org.abimon.knolus.KnolusUnion
+import org.abimon.knolus.types.*
 import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.KorneaResult
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 
 @AvailableSince(Knolus.VERSION_1_2_0)
-interface TransKnolusParserVisitor<T> {
-    fun visit(ctx: KnolusRuleBlueprint): KorneaResult<T> =
+interface TransKnolusParserVisitor {
+    fun visit(ctx: KnolusRuleBlueprint): KorneaResult<KnolusUnion> =
         when (ctx) {
             is ScopeBlueprint -> visitScope(ctx)
             is LineBlueprint -> visitLine(ctx)
@@ -39,292 +41,292 @@ interface TransKnolusParserVisitor<T> {
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitScope(ctx: KnolusParser.ScopeContext): KorneaResult<T> = visitScope(TransScopeBlueprint(ctx))
+    fun visitScope(ctx: KnolusParser.ScopeContext): KorneaResult<KnolusUnion.ScopeType> = visitScope(TransScopeBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.scope].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitScope(ctx: ScopeBlueprint): KorneaResult<T>
+    fun visitScope(ctx: ScopeBlueprint): KorneaResult<KnolusUnion.ScopeType>
 
     /**
      * Visit a parse tree produced by [KnolusParser.line].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitLine(ctx: KnolusParser.LineContext): KorneaResult<T> = visitLine(TransLineBlueprint(ctx))
+    fun visitLine(ctx: KnolusParser.LineContext): KorneaResult<KnolusUnion> = visitLine(TransLineBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.line].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitLine(ctx: LineBlueprint): KorneaResult<T>
+    fun visitLine(ctx: LineBlueprint): KorneaResult<KnolusUnion>
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareVariable].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareVariable(ctx: KnolusParser.DeclareVariableContext): KorneaResult<T> = visitDeclareVariable(TransDeclareVariableBlueprint(ctx))
+    fun visitDeclareVariable(ctx: KnolusParser.DeclareVariableContext): KorneaResult<KnolusUnion.DeclareVariableAction> = visitDeclareVariable(TransDeclareVariableBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareVariable].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareVariable(ctx: DeclareVariableBlueprint): KorneaResult<T>
+    fun visitDeclareVariable(ctx: DeclareVariableBlueprint): KorneaResult<KnolusUnion.DeclareVariableAction>
 
     /**
      * Visit a parse tree produced by [KnolusParser.setVariableValue].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitSetVariableValue(ctx: KnolusParser.SetVariableValueContext): KorneaResult<T> = visitSetVariableValue(TransAssignVariableBlueprint(ctx))
+    fun visitSetVariableValue(ctx: KnolusParser.SetVariableValueContext): KorneaResult<KnolusUnion.AssignVariableAction> = visitSetVariableValue(TransAssignVariableBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.setVariableValue].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitSetVariableValue(ctx: AssignVariableBlueprint): KorneaResult<T>
+    fun visitSetVariableValue(ctx: AssignVariableBlueprint): KorneaResult<KnolusUnion.AssignVariableAction>
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareFunction].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareFunction(ctx: KnolusParser.DeclareFunctionContext): KorneaResult<T> = visitDeclareFunction(TransDeclareFunctionBlueprint(ctx))
+    fun visitDeclareFunction(ctx: KnolusParser.DeclareFunctionContext): KorneaResult<KnolusUnion.FunctionDeclaration> = visitDeclareFunction(TransDeclareFunctionBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareFunction].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareFunction(ctx: DeclareFunctionBlueprint): KorneaResult<T>
+    fun visitDeclareFunction(ctx: DeclareFunctionBlueprint): KorneaResult<KnolusUnion.FunctionDeclaration>
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareFunctionBody].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareFunctionBody(ctx: KnolusParser.DeclareFunctionBodyContext): KorneaResult<T> = visitDeclareFunctionBody(TransDeclareFunctionBodyBlueprint(ctx))
+    fun visitDeclareFunctionBody(ctx: KnolusParser.DeclareFunctionBodyContext): KorneaResult<KnolusUnion.ScopeType> = visitDeclareFunctionBody(TransDeclareFunctionBodyBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.declareFunctionBody].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDeclareFunctionBody(ctx: DeclareFunctionBodyBlueprint): KorneaResult<T>
+    fun visitDeclareFunctionBody(ctx: DeclareFunctionBodyBlueprint): KorneaResult<KnolusUnion.ScopeType>
 
     /**
      * Visit a parse tree produced by [KnolusParser.functionCall].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitFunctionCall(ctx: KnolusParser.FunctionCallContext): KorneaResult<T> = visitFunctionCall(TransFunctionCallBlueprint(ctx))
+    fun visitFunctionCall(ctx: KnolusParser.FunctionCallContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>> = visitFunctionCall(TransFunctionCallBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.functionCall].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitFunctionCall(ctx: FunctionCallBlueprint): KorneaResult<T>
+    fun visitFunctionCall(ctx: FunctionCallBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.functionCallParameter].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitFunctionCallParameter(ctx: KnolusParser.FunctionCallParameterContext): KorneaResult<T> = visitFunctionCallParameter(TransFunctionCallParameterBlueprint(ctx))
+    fun visitFunctionCallParameter(ctx: KnolusParser.FunctionCallParameterContext): KorneaResult<KnolusUnion.FunctionParameterType> = visitFunctionCallParameter(TransFunctionCallParameterBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.functionCallParameter].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitFunctionCallParameter(ctx: FunctionCallParameterBlueprint): KorneaResult<T>
+    fun visitFunctionCallParameter(ctx: FunctionCallParameterBlueprint): KorneaResult<KnolusUnion.FunctionParameterType>
 
     /**
      * Visit a parse tree produced by [KnolusParser.memberFunctionCall].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KorneaResult<T> = visitMemberFunctionCall(TransMemberFunctionCallBlueprint(ctx))
+    fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyMemberFunctionCall>> = visitMemberFunctionCall(TransMemberFunctionCallBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.memberFunctionCall].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitMemberFunctionCall(ctx: MemberFunctionCallBlueprint): KorneaResult<T>
+    fun visitMemberFunctionCall(ctx: MemberFunctionCallBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusLazyMemberFunctionCall>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.variableReference].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KorneaResult<T> = visitVariableReference(TransVariableReferenceBlueprint(ctx))
+    fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KorneaResult<KnolusUnion.VariableValue<KnolusVariableReference>> = visitVariableReference(TransVariableReferenceBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.variableReference].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitVariableReference(ctx: VariableReferenceBlueprint): KorneaResult<T>
+    fun visitVariableReference(ctx: VariableReferenceBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusVariableReference>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.memberVariableReference].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KorneaResult<T> = visitMemberVariableReference(TransMemberVariableReferenceBlueprint(ctx))
+    fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KorneaResult<KnolusUnion.VariableValue<KnolusPropertyReference>> = visitMemberVariableReference(TransMemberVariableReferenceBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.memberVariableReference].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitMemberVariableReference(ctx: MemberVariableReferenceBlueprint): KorneaResult<T>
+    fun visitMemberVariableReference(ctx: MemberVariableReferenceBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusPropertyReference>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.variableValue].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitVariableValue(ctx: KnolusParser.VariableValueContext): KorneaResult<T> = visitVariableValue(TransVariableValueBlueprint(ctx))
+    fun visitVariableValue(ctx: KnolusParser.VariableValueContext): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>> = visitVariableValue(TransVariableValueBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.variableValue].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitVariableValue(ctx: VariableValueBlueprint): KorneaResult<T>
+    fun visitVariableValue(ctx: VariableValueBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.array].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitArray(ctx: KnolusParser.ArrayContext): KorneaResult<T> = visitArray(TransArrayBlueprint(ctx))
+    fun visitArray(ctx: KnolusParser.ArrayContext): KorneaResult<KnolusUnion.VariableValue<KnolusArray<out KnolusTypedValue>>> = visitArray(TransArrayBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.array].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitArray(ctx: ArrayBlueprint): KorneaResult<T>
+    fun visitArray(ctx: ArrayBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusArray<out KnolusTypedValue>>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.arrayContents].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitArrayContents(ctx: KnolusParser.ArrayContentsContext): KorneaResult<T> = visitArrayContents(TransArrayContentsBlueprint(ctx))
+    fun visitArrayContents(ctx: KnolusParser.ArrayContentsContext): KorneaResult<KnolusUnion.ArrayContents> = visitArrayContents(TransArrayContentsBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.arrayContents].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitArrayContents(ctx: ArrayContentsBlueprint): KorneaResult<T>
+    fun visitArrayContents(ctx: ArrayContentsBlueprint): KorneaResult<KnolusUnion.ArrayContents>
 
     /**
      * Visit a parse tree produced by [KnolusParser.bool].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitBool(ctx: KnolusParser.BoolContext): KorneaResult<T> = visitBool(TransBooleanBlueprint(ctx))
+    fun visitBool(ctx: KnolusParser.BoolContext): KorneaResult<KnolusUnion.VariableValue<KnolusBoolean>> = visitBool(TransBooleanBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.bool].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitBool(ctx: BooleanBlueprint): KorneaResult<T>
+    fun visitBool(ctx: BooleanBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusBoolean>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.quotedString].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitQuotedString(ctx: KnolusParser.QuotedStringContext): KorneaResult<T> = visitQuotedString(TransQuotedStringBlueprint(ctx))
+    fun visitQuotedString(ctx: KnolusParser.QuotedStringContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyString>> = visitQuotedString(TransQuotedStringBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.quotedString].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitQuotedString(ctx: QuotedStringBlueprint): KorneaResult<T>
+    fun visitQuotedString(ctx: QuotedStringBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusLazyString>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.quotedCharacter].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KorneaResult<T> = visitQuotedCharacter(TransQuotedCharacterBlueprint(ctx))
+    fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KorneaResult<KnolusUnion.VariableValue<KnolusChar>> = visitQuotedCharacter(TransQuotedCharacterBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.quotedCharacter].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitQuotedCharacter(ctx: QuotedCharacterBlueprint): KorneaResult<T>
+    fun visitQuotedCharacter(ctx: QuotedCharacterBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusChar>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.number].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitNumber(ctx: KnolusParser.NumberContext): KorneaResult<T> = visitNumber(TransNumberBlueprint(ctx))
+    fun visitNumber(ctx: KnolusParser.NumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> = visitNumber(TransNumberBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.number].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitNumber(ctx: NumberBlueprint): KorneaResult<T>
+    fun visitNumber(ctx: NumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.wholeNumber].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KorneaResult<T> = visitWholeNumber(TransWholeNumberBlueprint(ctx))
+    fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusInt>> = visitWholeNumber(TransWholeNumberBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.wholeNumber].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<T>
+    fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusInt>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.decimalNumber].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDecimalNumber(ctx: KnolusParser.DecimalNumberContext): KorneaResult<T> = visitDecimalNumber(TransDecimalNumberBlueprint(ctx))
+    fun visitDecimalNumber(ctx: KnolusParser.DecimalNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusDouble>> = visitDecimalNumber(TransDecimalNumberBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.decimalNumber].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitDecimalNumber(ctx: DecimalNumberBlueprint): KorneaResult<T>
+    fun visitDecimalNumber(ctx: DecimalNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusDouble>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.expression].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitExpression(ctx: KnolusParser.ExpressionContext): KorneaResult<T> = visitExpression(TransExpressionBlueprint(ctx))
+    fun visitExpression(ctx: KnolusParser.ExpressionContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyExpression>> = visitExpression(TransExpressionBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.expression].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitExpression(ctx: ExpressionBlueprint): KorneaResult<T>
+    fun visitExpression(ctx: ExpressionBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusLazyExpression>>
 }
