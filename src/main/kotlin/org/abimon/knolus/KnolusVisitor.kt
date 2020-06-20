@@ -17,7 +17,7 @@ import org.antlr.v4.runtime.tree.TerminalNode
 
 @ExperimentalUnsignedTypes
 /** TODO: Keep KorneaResult in mind, see how allocs do */
-class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Recognizer<*, *>) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
+class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: Recognizer<*, *>) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
     companion object {
         const val NO_VALID_VARIABLE_VALUE = 0x1200
         const val NO_VALID_NUMBER_TYPE = 0x1201
@@ -68,7 +68,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     }
 
     override fun visitScope(ctx: KnolusParser.ScopeContext): KorneaResult<KnolusUnion.ScopeType> {
-        if (!restrictions.canVisitScope(ctx))
+        if (restrictions.canVisitScope(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(SCOPE_VISIT_DENIED, "Restriction denied scope visit")
 
         if (ctx.children?.isNotEmpty() != true) return KorneaResult.empty()
@@ -83,13 +83,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
         }.filter(List<KnolusUnion>::isNotEmpty).map { list ->
             KnolusUnion.ScopeType(list.toTypedArray())
         }.flatMap { scope ->
-            if (restrictions.shouldTakeScope(ctx, scope)) KorneaResult.success(scope)
+            if (restrictions.shouldTakeScope(ctx, scope) is KorneaResult.Success<*>) KorneaResult.success(scope)
             else KorneaResult.errorAsIllegalState(SCOPE_RESULT_DENIED, "Restriction denied scope result")
         }
     }
 
     override fun visitDeclareVariable(ctx: KnolusParser.DeclareVariableContext): KorneaResult<KnolusUnion.DeclareVariableAction> {
-        if (!restrictions.canVisitVariableDeclaration(ctx))
+        if (restrictions.canVisitVariableDeclaration(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(VARIABLE_DECL_VISIT_DENIED, "Restriction denied variable declaration visit")
 
         return ctx.variableValue()?.let(this::visitVariableValue)
@@ -101,13 +101,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                     ctx.GLOBAL() != null
                 )
             }.flatMap { variableDeclaration ->
-                if (restrictions.shouldTakeVariableDeclaration(ctx, variableDeclaration)) KorneaResult.successInline(variableDeclaration)
+                if (restrictions.shouldTakeVariableDeclaration(ctx, variableDeclaration) is KorneaResult.Success<*>) KorneaResult.successInline(variableDeclaration)
                 else KorneaResult.errorAsIllegalState(VARIABLE_DECL_RESULT_DENIED, "Restriction denied variable declaration result")
             }
     }
 
     override fun visitSetVariableValue(ctx: KnolusParser.SetVariableValueContext): KorneaResult<out KnolusUnion> {
-        if (!restrictions.canVisitVariableAssignment(ctx))
+        if (restrictions.canVisitVariableAssignment(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(VARIABLE_ASSIGN_VISIT_DENIED, "Restriction denied variable assign visit")
 
         return visitVariableValue(ctx.variableValue())
@@ -118,7 +118,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                     ctx.GLOBAL() != null
                 )
             }.flatMap { variableAssign ->
-                if (restrictions.shouldTakeVariableAssignment(ctx, variableAssign)) KorneaResult.successInline(variableAssign)
+                if (restrictions.shouldTakeVariableAssignment(ctx, variableAssign) is KorneaResult.Success<*>) KorneaResult.successInline(variableAssign)
                 else KorneaResult.errorAsIllegalState(VARIABLE_ASSIGN_RESULT_DENIED, "Restriction denied variable assign result")
             }
     }
@@ -126,7 +126,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     override fun visitVariableValue(ctx: KnolusParser.VariableValueContext?): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>> {
         if (ctx == null) return KorneaResult.empty()
 
-        if (!restrictions.canVisitVariableValue(ctx))
+        if (restrictions.canVisitVariableValue(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(VARIABLE_VALUE_VISIT_DENIED, "Restriction denied variable value visit")
 
         val variableValue =
@@ -147,13 +147,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
             )
 
         return variableValue.flatMap { value ->
-            if (restrictions.shouldTakeVariableValue(ctx, value)) KorneaResult.successInline(value)
+            if (restrictions.shouldTakeVariableValue(ctx, value) is KorneaResult.Success<*>) KorneaResult.successInline(value)
             else KorneaResult.errorAsIllegalState(VARIABLE_VALUE_RESULT_DENIED, "Restriction denied variable value result")
         }
     }
 
     override fun visitBool(ctx: KnolusParser.BoolContext): KorneaResult<KnolusUnion.VariableValue<KnolusBoolean>> {
-        if (!restrictions.canVisitBoolean(ctx))
+        if (restrictions.canVisitBoolean(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(BOOLEAN_VISIT_DENIED, "Restriction denied boolean visit")
 
         val value =
@@ -165,13 +165,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
             )
 
         return value.flatMap { bool ->
-            if (restrictions.shouldTakeBoolean(ctx, bool)) KorneaResult.successInline(bool)
+            if (restrictions.shouldTakeBoolean(ctx, bool) is KorneaResult.Success<*>) KorneaResult.successInline(bool)
             else KorneaResult.errorAsIllegalState(BOOLEAN_RESULT_DENIED, "Restriction denied boolean result")
         }
     }
 
     override fun visitQuotedString(ctx: KnolusParser.QuotedStringContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyString>> {
-        if (!restrictions.canVisitQuotedString(ctx))
+        if (restrictions.canVisitQuotedString(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(QUOTED_STRING_VISIT_DENIED, "Restriction denied quoted string visit")
 
         val components: MutableList<KnolusUnion.StringComponent> = ArrayList()
@@ -215,13 +215,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
         val lazyStr = KnolusLazyString(lazyComponents)
 
         return KorneaResult.successVar(lazyStr).flatMap { string ->
-            if (restrictions.shouldTakeQuotedString(ctx, string)) KorneaResult.successInline(string)
+            if (restrictions.shouldTakeQuotedString(ctx, string) is KorneaResult.Success<*>) KorneaResult.successInline(string)
             else KorneaResult.errorAsIllegalState(QUOTED_STRING_RESULT_DENIED, "Restriction denied quoted string result")
         }
     }
 
     override fun visitQuotedCharacter(ctx: KnolusParser.QuotedCharacterContext): KorneaResult<KnolusUnion.VariableValue<KnolusChar>> {
-        if (!restrictions.canVisitQuotedCharacter(ctx))
+        if (restrictions.canVisitQuotedCharacter(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(QUOTED_CHARACTER_VISIT_DENIED, "Restriction denied quoted character visit")
 
         val charValue = ctx.CHARACTER_ESCAPES()?.let { node ->
@@ -244,24 +244,24 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                         ?: KorneaResult.errorAsIllegalState(NO_VALID_CHAR_VALUE, "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
 
         return charValue.flatMap { char ->
-            if (restrictions.shouldTakeQuotedCharacter(ctx, char)) KorneaResult.successInline(char)
+            if (restrictions.shouldTakeQuotedCharacter(ctx, char) is KorneaResult.Success<*>) KorneaResult.successInline(char)
             else KorneaResult.errorAsIllegalState(QUOTED_CHARACTER_RESULT_DENIED, "Restriction denied quoted character result")
         }
     }
 
     override fun visitVariableReference(ctx: KnolusParser.VariableReferenceContext): KorneaResult<KnolusUnion.VariableValue<KnolusVariableReference>> {
-        if (!restrictions.canVisitVariableReference(ctx))
+        if (restrictions.canVisitVariableReference(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(VARIABLE_REF_VISIT_DENIED, "Restriction denied variable reference visit")
 
         return KorneaResult.successVar(KnolusVariableReference(ctx.variableName.text.removePrefix("$")))
             .flatMap { ref ->
-                if (restrictions.shouldTakeVariableReference(ctx, ref)) KorneaResult.successInline(ref)
+                if (restrictions.shouldTakeVariableReference(ctx, ref) is KorneaResult.Success<*>) KorneaResult.successInline(ref)
                 else KorneaResult.errorAsIllegalState(VARIABLE_REF_RESULT_DENIED, "Restriction denied variable reference result")
             }
     }
 
     override fun visitMemberVariableReference(ctx: KnolusParser.MemberVariableReferenceContext): KorneaResult<KnolusUnion.VariableValue<KnolusPropertyReference>> {
-        if (!restrictions.canVisitMemberVariableReference(ctx))
+        if (restrictions.canVisitMemberVariableReference(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(
                 MEMBER_VARIABLE_REF_VISIT_DENIED,
                 "Restriction denied member variable reference visit"
@@ -273,7 +273,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                 ctx.variableReference().variableName.text
             )
         ).flatMap { ref ->
-            if (restrictions.shouldTakeMemberVariableReference(ctx, ref)) KorneaResult.successInline(ref)
+            if (restrictions.shouldTakeMemberVariableReference(ctx, ref) is KorneaResult.Success<*>) KorneaResult.successInline(ref)
             else KorneaResult.errorAsIllegalState(
                 MEMBER_VARIABLE_REF_RESULT_DENIED,
                 "Restriction denied member variable reference result"
@@ -282,7 +282,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     }
 
     override fun visitFunctionCall(ctx: KnolusParser.FunctionCallContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>> {
-        if (!restrictions.canVisitFunctionCall(ctx))
+        if (restrictions.canVisitFunctionCall(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(FUNCTION_CALL_VISIT_DENIED, "Restriction denied function call visit")
 
         val functionName = ctx.functionName.text.removeSuffix("(")
@@ -292,13 +292,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
             }.flatMap { params ->
                 KorneaResult.successVar(KnolusLazyFunctionCall(functionName, params.toTypedArray()))
             }.flatMap { func ->
-                if (restrictions.shouldTakeFunctionCall(ctx, func)) KorneaResult.successInline(func)
+                if (restrictions.shouldTakeFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.successInline(func)
                 else KorneaResult.errorAsIllegalState(FUNCTION_CALL_RESULT_DENIED, "Restriction denied function call result")
             }
     }
 
     override fun visitMemberFunctionCall(ctx: KnolusParser.MemberFunctionCallContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyMemberFunctionCall>> {
-        if (!restrictions.canVisitMemberFunctionCall(ctx))
+        if (restrictions.canVisitMemberFunctionCall(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(
                 MEMBER_FUNCTION_CALL_VISIT_DENIED,
                 "Restriction denied member function call visit"
@@ -315,7 +315,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                     )
                 )
             }.flatMap { func ->
-                if (restrictions.shouldTakeMemberFunctionCall(ctx, func)) KorneaResult.success(func)
+                if (restrictions.shouldTakeMemberFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.success(func)
                 else KorneaResult.errorAsIllegalState(
                     MEMBER_FUNCTION_CALL_RESULT_DENIED,
                     "Restriction denied member function call result"
@@ -324,7 +324,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     }
 
     override fun visitFunctionCallParameter(ctx: KnolusParser.FunctionCallParameterContext): KorneaResult<KnolusUnion.FunctionParameterType> {
-        if (!restrictions.canVisitFunctionCallParameter(ctx))
+        if (restrictions.canVisitFunctionCallParameter(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(
                 FUNCTION_CALL_PARAM_VISIT_DENIED,
                 "Restriction denied function call parameter visit"
@@ -339,7 +339,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                     )
                 )
             }.flatMap { param ->
-                if (restrictions.shouldTakeFunctionCallParameter(ctx, param)) KorneaResult.successInline(param)
+                if (restrictions.shouldTakeFunctionCallParameter(ctx, param) is KorneaResult.Success<*>) KorneaResult.successInline(param)
                 else KorneaResult.errorAsIllegalState(
                     FUNCTION_CALL_PARAM_RESULT_DENIED,
                     "Restriction denied function call parameter result"
@@ -348,7 +348,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     }
 
     override fun visitNumber(ctx: KnolusParser.NumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> {
-        if (!restrictions.canVisitNumber(ctx))
+        if (restrictions.canVisitNumber(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(NUMBER_VISIT_DENIED, "Restriction denied number visit")
 
         val number = ctx.wholeNumber()?.let(this::visitWholeNumber)
@@ -358,26 +358,26 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                      )
 
         return number.flatMap { num ->
-            if (restrictions.shouldTakeNumber(ctx, num)) KorneaResult.successInline(num)
+            if (restrictions.shouldTakeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
             else KorneaResult.errorAsIllegalState(NUMBER_RESULT_DENIED, "Restriction denied number result")
         }
     }
 
     override fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusInt>> {
-        if (!restrictions.canVisitWholeNumber(ctx))
+        if (restrictions.canVisitWholeNumber(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(WHOLE_NUMBER_VISIT_DENIED, "Restriction denied whole number visit")
 
         val int = ctx.INTEGER().text.toIntOrNullBaseN()
                   ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${ctx.INTEGER().text} was not a valid int string")
 
         return KorneaResult.successVar(KnolusInt(int)).flatMap { num ->
-            if (restrictions.shouldTakeWholeNumber(ctx, num)) KorneaResult.successInline(num)
+            if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
             else KorneaResult.errorAsIllegalArgument(WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
         }
     }
 
     override fun visitDecimalNumber(ctx: KnolusParser.DecimalNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusDouble>> {
-        if (!restrictions.canVisitDecimalNumber(ctx))
+        if (restrictions.canVisitDecimalNumber(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(DECIMAL_NUMBER_VISIT_DENIED, "Restriction denied decimal number visit")
 
         val double = ctx.DECIMAL_NUMBER().text.toDoubleOrNull()
@@ -387,13 +387,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
                      )
 
         return KorneaResult.successVar(KnolusDouble(double)).flatMap { num ->
-            if (restrictions.shouldTakeDecimalNumber(ctx, num)) KorneaResult.successInline(num)
+            if (restrictions.shouldTakeDecimalNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
             else KorneaResult.errorAsIllegalState(DECIMAL_NUMBER_RESULT_DENIED, "Restriction denied decimal number result")
         }
     }
 
     override fun visitExpression(ctx: KnolusParser.ExpressionContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyExpression>> {
-        if (!restrictions.canVisitExpression(ctx))
+        if (restrictions.canVisitExpression(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(EXPRESSION_VISIT_DENIED, "Restriction denied expression visit")
 
         val starting = visitVariableValue(ctx.startingValue).getOrBreak { return it.asType() }
@@ -407,13 +407,13 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
         }
 
         return KorneaResult.successVar(KnolusLazyExpression(starting.value, ops.toTypedArray())).flatMap { expr ->
-            if (restrictions.shouldTakeExpression(ctx, expr)) KorneaResult.successInline(expr)
+            if (restrictions.shouldTakeExpression(ctx, expr) is KorneaResult.Success<*>) KorneaResult.successInline(expr)
             else KorneaResult.errorAsIllegalState(EXPRESSION_RESULT_DENIED, "Restriction denied expression result")
         }
     }
 
     override fun visitExpressionOperation(ctx: KnolusParser.ExpressionOperationContext): KorneaResult<ExpressionOperator> {
-        if (!restrictions.canVisitExpressionOperation(ctx))
+        if (restrictions.canVisitExpressionOperation(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(
                 EXPRESSION_OPERATION_VISIT_DENIED,
                 "Restriction denied expression operation visit"
@@ -431,7 +431,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
             )
 
         return value.flatMap { op ->
-            if (restrictions.shouldTakeExpressionOperation(ctx, op)) KorneaResult.successInline(op)
+            if (restrictions.shouldTakeExpressionOperation(ctx, op) is KorneaResult.Success<*>) KorneaResult.successInline(op)
             else KorneaResult.errorAsIllegalState(
                 EXPRESSION_OPERATION_RESULT_DENIED,
                 "Restriction denied expression operation result"
@@ -440,19 +440,19 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
     }
 
     override fun visitArray(ctx: KnolusParser.ArrayContext): KorneaResult<KnolusUnion.VariableValue<KnolusArray<out KnolusTypedValue>>> {
-        if (!restrictions.canVisitArray(ctx))
+        if (restrictions.canVisitArray(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(ARRAY_VISIT_DENIED, "Restriction denied array visit")
 
         return visitArrayContents(ctx.arrayContents())
             .flatMap { array -> KorneaResult.successVar(KnolusArray.of(array.inner)) }
             .flatMap { array ->
-                if (restrictions.shouldTakeArray(ctx, array)) KorneaResult.successInline(array)
+                if (restrictions.shouldTakeArray(ctx, array) is KorneaResult.Success<*>) KorneaResult.successInline(array)
                 else KorneaResult.errorAsIllegalState(ARRAY_RESULT_DENIED, "Restriction denied array result")
             }
     }
 
     override fun visitArrayContents(ctx: KnolusParser.ArrayContentsContext): KorneaResult<KnolusUnion.ArrayContents> {
-        if (!restrictions.canVisitArrayContents(ctx))
+        if (restrictions.canVisitArrayContents(ctx) is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(ARRAY_CONTENTS_VISIT_DENIED, "Restriction denied array contents visit")
 
         val initial: KorneaResult<MutableList<KnolusTypedValue>> = KorneaResult.success(ArrayList())
@@ -467,7 +467,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
         }.map { list ->
             KnolusUnion.ArrayContents(list.toTypedArray())
         }.flatMap { array ->
-            if (restrictions.shouldTakeArrayContents(ctx, array)) KorneaResult.successInline(array)
+            if (restrictions.shouldTakeArrayContents(ctx, array) is KorneaResult.Success<*>) KorneaResult.successInline(array)
             else KorneaResult.errorAsIllegalState(ARRAY_CONTENTS_RESULT_DENIED, "Restriction denied array contents result")
         }
     }
@@ -475,7 +475,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions, val parser: Rec
 
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
-fun parseKnolusScope(text: String, restrictions: KnolusVisitorRestrictions): KorneaResult<KnolusUnion.ScopeType> {
+fun parseKnolusScope(text: String, restrictions: KnolusVisitorRestrictions<*>): KorneaResult<KnolusUnion.ScopeType> {
     try {
         val charStream = CharStreams.fromString(text)
         val lexer = KnolusLexer(charStream)
