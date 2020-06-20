@@ -8,6 +8,7 @@ import org.abimon.knolus.context.KnolusScopeContext
 import org.abimon.knolus.restrictions.KnolusRestriction
 import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
+import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.*
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.misc.ParseCancellationException
@@ -15,6 +16,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.kornea.toolkit.common.switchIfNull
 
+@AvailableSince(Knolus.VERSION_1_2_0)
 @ExperimentalUnsignedTypes
 /**
  * A version of [KnolusVisitor] that's capable of handling arbitrary parser input

@@ -8,6 +8,7 @@ import org.abimon.knolus.context.KnolusScopeContext
 import org.abimon.knolus.restrictions.KnolusRestriction
 import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
+import org.abimon.kornea.annotations.ChangedSince
 import org.abimon.kornea.errors.common.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
@@ -17,6 +18,7 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.kornea.toolkit.common.switchIfNull
 
 @ExperimentalUnsignedTypes
+@ChangedSince(Knolus.VERSION_1_2_0)
 /** TODO: Keep KorneaResult in mind, see how allocs do */
 class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: Recognizer<*, *>) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
     companion object {

@@ -3,12 +3,15 @@
 package org.abimon.knolus.transform
 
 import org.abimon.knolus.ExpressionOperator
+import org.abimon.knolus.Knolus
+import org.abimon.kornea.annotations.AvailableSince
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.tree.TerminalNode
 import java.lang.reflect.Modifier
 
+@AvailableSince(Knolus.VERSION_1_2_0)
 interface ParserBlueprint<R : ParserRuleContext> {
     val scopeContext: Class<out R>
     val lineContext: Class<out R>
@@ -71,6 +74,7 @@ fun ParserBlueprint<ParserRuleContext>.contextToOperator(parserRuleContext: Pars
         else -> throw IllegalStateException("Invalid token in $parserRuleContext")
     }
 
+@AvailableSince(Knolus.VERSION_1_2_0)
 class ReflectiveParserBlueprint<R : ParserRuleContext, P : Parser> private constructor(val parser: P) : ParserBlueprint<R> {
     companion object {
         operator fun <P : Parser> invoke(parser: P): ReflectiveParserBlueprint<ParserRuleContext, P> = ReflectiveParserBlueprint(parser)

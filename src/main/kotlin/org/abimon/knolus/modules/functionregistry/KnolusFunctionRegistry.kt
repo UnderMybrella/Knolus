@@ -138,6 +138,26 @@ fun <R, C: KnolusContext<out R>> KnolusContext<R>.registerFunctionWithoutReturn(
         .build()
 )
 
+fun <R> KnolusContext<R>.registerUntypedFunction(
+    functionName: String,
+    func: suspend (context: KnolusContext<out R>) -> KnolusTypedValue,
+): KorneaResult<KnolusFunction<KnolusTypedValue?, R, *>> = register(
+    functionName,
+    functionBuilder<R, KnolusContext<out R>>()
+        .setFunction(func)
+        .build()
+)
+
+fun <R> KnolusContext<R>.registerUntypedFunctionWithoutReturn(
+    functionName: String,
+    func: suspend (context: KnolusContext<out R>) -> Unit,
+) = register(
+    functionName,
+    functionBuilder<R, KnolusContext<out R>>()
+        .setFunctionWithoutReturn(func)
+        .build()
+)
+
 fun <R, C : KnolusContext<out R>, P> KnolusContext<R>.registerFunction(
     functionName: String,
     parameterSpec: ParameterSpec<*, P, in R, C>,

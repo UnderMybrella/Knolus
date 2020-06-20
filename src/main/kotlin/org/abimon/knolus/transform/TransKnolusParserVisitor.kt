@@ -1,9 +1,12 @@
 package org.abimon.knolus.transform
 
 import org.abimon.antlr.knolus.KnolusParser
+import org.abimon.knolus.Knolus
+import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.KorneaResult
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 
+@AvailableSince(Knolus.VERSION_1_2_0)
 interface TransKnolusParserVisitor<T> {
     fun visit(ctx: KnolusRuleBlueprint): KorneaResult<T> =
         when (ctx) {
