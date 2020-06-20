@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.kornea.toolkit.common.switchIfNull
 
 @ExperimentalUnsignedTypes
 /** TODO: Keep KorneaResult in mind, see how allocs do */
@@ -240,7 +241,6 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
             )
         } ?: ctx.QUOTED_CHARACTERS()?.let { node -> KorneaResult.successVar(KnolusChar(node.text[0])) }
                         ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { node -> KorneaResult.successVar(KnolusChar('\n')) }
-                        ?: ctx.QUOTED_CHARACTER_LINE_BREAK()?.let { return KorneaResult.successVar(KnolusChar('\n')) }
                         ?: KorneaResult.errorAsIllegalState(NO_VALID_CHAR_VALUE, "No valid char value in \"${ctx.text}\" (${ctx.toString(parser)})")
 
         return charValue.flatMap { char ->
