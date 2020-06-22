@@ -57,9 +57,22 @@ quotedCharacter
 
 quotedStringVariableReference: QUOTED_STRING_VARIABLE_REFERENCE variableReference;
 
+plainString: (CHARACTER_ESCAPES | PLAIN_CHARACTERS)+?;
+
 number: wholeNumber | decimalNumber;
 wholeNumber: INTEGER;
 decimalNumber: DECIMAL_NUMBER;
+
+stringValue
+    : quotedString
+    | quotedCharacter
+    | memberFunctionCall
+    | functionCall
+    | expression
+    | memberVariableReference
+    | variableReference
+    | plainString
+    ;
 
 expression
     : BEGIN_EXPRESSION

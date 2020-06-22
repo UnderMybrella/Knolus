@@ -1,5 +1,5 @@
 lexer grammar LibLexer;
-tokens { IDENTIFIER }
+tokens { IDENTIFIER, PLAIN_CHARACTERS }
 
 INTEGER: '-'? ('0b' BINARY_DIGITS+) | ('0o' OCTAL_DIGITS+) | ('0x' HEX_DIGITS+) | '0d'? DECIMAL_DIGITS+;
 DECIMAL_NUMBER: '-'? ('0' | ([1-9] DECIMAL_DIGITS*)) ('.' DECIMAL_DIGITS+)? ([eE] [+\-]? DECIMAL_DIGITS+)?;
