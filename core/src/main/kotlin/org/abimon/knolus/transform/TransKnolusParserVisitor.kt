@@ -5,10 +5,12 @@ import org.abimon.knolus.Knolus
 import org.abimon.knolus.KnolusUnion
 import org.abimon.knolus.types.*
 import org.abimon.kornea.annotations.AvailableSince
+import org.abimon.kornea.annotations.ChangedSince
 import org.abimon.kornea.errors.common.KorneaResult
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 
 @AvailableSince(Knolus.VERSION_1_2_0)
+@ChangedSince(Knolus.VERSION_1_3_0)
 interface TransKnolusParserVisitor {
     fun visit(ctx: KnolusRuleBlueprint): KorneaResult<KnolusUnion> =
         when (ctx) {

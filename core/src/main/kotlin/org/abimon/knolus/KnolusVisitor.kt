@@ -20,7 +20,7 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.kornea.toolkit.common.switchIfNull
 
 @ExperimentalUnsignedTypes
-@ChangedSince(Knolus.VERSION_1_2_0)
+@ChangedSince(Knolus.VERSION_1_3_0)
 /** TODO: Keep KorneaResult in mind, see how allocs do */
 class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: Recognizer<*, *>) : KnolusParserBaseVisitor<KorneaResult<KnolusUnion>>() {
     companion object {
