@@ -132,5 +132,7 @@ fabric.properties
 src/main/gen
 core/src/main/antlr/gen
 example/src/main/antlr/gen
+example/src/main/antlr/Knolus*
+example/src/main/antlr/LibLexer*
 
 */build/
