@@ -29,6 +29,7 @@ variableValue
     | NULL
     | memberVariableReference
     | variableReference
+    | plainString
     ;
 
 array: BEGIN_ARRAY arrayContents END_ARRAY;

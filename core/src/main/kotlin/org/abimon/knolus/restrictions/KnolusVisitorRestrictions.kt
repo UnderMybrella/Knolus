@@ -9,12 +9,12 @@ import org.abimon.kornea.errors.common.StaticSuccess
 import org.abimon.kornea.errors.common.success
 
 interface KnolusVisitorRestrictions<T> {
-    interface Permissive<T>: KnolusVisitorRestrictions<T> {
-        companion object: Permissive<StaticSuccess> {
+    interface Permissive<T> : KnolusVisitorRestrictions<T> {
+        companion object : Permissive<StaticSuccess> {
             override fun defaultValue(): KorneaResult<StaticSuccess> = KorneaResult.success()
         }
 
-        fun defaultValue() : KorneaResult<T>
+        fun defaultValue(): KorneaResult<T>
 
         override fun canVisitScope(context: KnolusParser.ScopeContext): KorneaResult<T> = defaultValue()
 
@@ -31,6 +31,11 @@ interface KnolusVisitorRestrictions<T> {
         override fun canVisitVariableValue(context: KnolusParser.VariableValueContext): KorneaResult<T> = defaultValue()
 
         override fun <VT : KnolusTypedValue> shouldTakeVariableValue(context: KnolusParser.VariableValueContext, value: KnolusUnion.VariableValue<VT>): KorneaResult<T> = defaultValue()
+
+        override fun canVisitPlainString(context: KnolusParser.PlainStringContext): KorneaResult<T> = defaultValue()
+        override fun canVisitStringValue(context: KnolusParser.StringValueContext): KorneaResult<T> = defaultValue()
+        override fun shouldTakePlainString(context: KnolusParser.PlainStringContext, string: KnolusUnion.VariableValue<KnolusString>): KorneaResult<T> = defaultValue()
+        override fun <VT : KnolusTypedValue> shouldTakeStringValue(context: KnolusParser.StringValueContext, value: KnolusUnion.VariableValue<VT>): KorneaResult<T> = defaultValue()
 
         override fun canVisitBoolean(context: KnolusParser.BoolContext): KorneaResult<T> = defaultValue()
 
@@ -92,7 +97,7 @@ interface KnolusVisitorRestrictions<T> {
 
         override fun shouldTakeArrayContents(context: KnolusParser.ArrayContentsContext, array: KnolusUnion.ArrayContents): KorneaResult<T> = defaultValue()
     }
-    
+
     fun canVisitScope(context: KnolusParser.ScopeContext): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeScope(context: KnolusParser.ScopeContext, scope: KnolusUnion.ScopeType): KorneaResult<T> = KorneaResult.empty()
 
@@ -114,6 +119,12 @@ interface KnolusVisitorRestrictions<T> {
         value: KnolusUnion.VariableValue<VT>,
     ): KorneaResult<T> = KorneaResult.empty()
 
+    fun canVisitStringValue(context: KnolusParser.StringValueContext): KorneaResult<T> = KorneaResult.empty()
+    fun <VT : KnolusTypedValue> shouldTakeStringValue(
+        context: KnolusParser.StringValueContext,
+        value: KnolusUnion.VariableValue<VT>
+    ): KorneaResult<T> = KorneaResult.empty()
+
     fun canVisitBoolean(context: KnolusParser.BoolContext): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeBoolean(context: KnolusParser.BoolContext, bool: KnolusUnion.VariableValue<KnolusBoolean>): KorneaResult<T> = KorneaResult.empty()
 
@@ -122,6 +133,9 @@ interface KnolusVisitorRestrictions<T> {
         context: KnolusParser.QuotedStringContext,
         string: KnolusUnion.VariableValue<KnolusLazyString>,
     ): KorneaResult<T> = KorneaResult.empty()
+
+    fun canVisitPlainString(context: KnolusParser.PlainStringContext): KorneaResult<T> = KorneaResult.empty()
+    fun shouldTakePlainString(context: KnolusParser.PlainStringContext, string: KnolusUnion.VariableValue<KnolusString>): KorneaResult<T> = KorneaResult.empty()
 
     fun canVisitQuotedCharacter(context: KnolusParser.QuotedCharacterContext): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeQuotedCharacter(

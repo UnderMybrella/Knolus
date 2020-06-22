@@ -204,6 +204,22 @@ interface TransKnolusParserVisitor {
      */
     fun visitVariableValue(ctx: VariableValueBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>>
 
+
+    /**
+     * Visit a parse tree produced by [KnolusParser.stringValue].
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    fun visitStringValue(ctx: KnolusParser.StringValueContext): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>> = visitStringValue(TransStringValueBlueprint(ctx))
+
+    /**
+     * Visit a parse tree produced by [KnolusParser.stringValue].
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    fun visitStringValue(ctx: StringValueBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>>
+
+
     /**
      * Visit a parse tree produced by [KnolusParser.array].
      * @param ctx the parse tree
@@ -259,6 +275,22 @@ interface TransKnolusParserVisitor {
      * @return the visitor result
      */
     fun visitQuotedString(ctx: QuotedStringBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusLazyString>>
+
+
+    /**
+     * Visit a parse tree produced by [KnolusParser.quotedString].
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    fun visitPlainString(ctx: KnolusParser.PlainStringContext): KorneaResult<KnolusUnion.VariableValue<KnolusString>> = visitPlainString(TransPlainStringBlueprint(ctx))
+
+    /**
+     * Visit a parse tree produced by [KnolusParser.quotedString].
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    fun visitPlainString(ctx: PlainStringBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusString>>
+
 
     /**
      * Visit a parse tree produced by [KnolusParser.quotedCharacter].

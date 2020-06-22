@@ -71,7 +71,8 @@ interface KnolusTokenBlueprint : KnolusBlueprint {
         CHARACTER_ESCAPES,
         QUOTED_CHARACTERS,
         QUOTED_CHARACTER_LINE_BREAK,
-        END_QUOTED_CHARACTER
+        END_QUOTED_CHARACTER,
+        PLAIN_CHARACTERS
     }
 
     val text: String
@@ -96,7 +97,6 @@ inline operator fun ParserRuleContext.get(blueprint: ParserBlueprint<ParserRuleC
 
 inline operator fun ParserRuleContext.get(klass: Class<out ParserRuleContext>, i: Int): ParserRuleContext? = getRuleContext(klass, i)
 inline operator fun ParserRuleContext.get(klass: Class<out ParserRuleContext>): ParserRuleContext? = getRuleContext(klass, 0)
-
 
 inline class TransTokenBlueprint(val backing: Token) : KnolusTokenBlueprint {
     override val text: String
@@ -269,6 +269,7 @@ inline class TransMemberVariableReferenceBlueprint(override val backing: ParserR
 interface VariableValueBlueprint : KnolusRuleBlueprint {
     fun getArray(blueprint: ParserBlueprint<ParserRuleContext>): ArrayBlueprint?
     fun getQuotedString(blueprint: ParserBlueprint<ParserRuleContext>): QuotedStringBlueprint?
+    fun getPlainString(blueprint: ParserBlueprint<ParserRuleContext>): PlainStringBlueprint?
     fun getQuotedCharacter(blueprint: ParserBlueprint<ParserRuleContext>): QuotedCharacterBlueprint?
     fun getNumber(blueprint: ParserBlueprint<ParserRuleContext>): NumberBlueprint?
     fun getMemberFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): MemberFunctionCallBlueprint?
@@ -283,6 +284,7 @@ interface VariableValueBlueprint : KnolusRuleBlueprint {
 inline class TransVariableValueBlueprint(override val backing: ParserRuleContext) : TransRuleBlueprint, VariableValueBlueprint {
     override fun getArray(blueprint: ParserBlueprint<ParserRuleContext>): ArrayBlueprint? = backing[blueprint.arrayContext]?.let(::TransArrayBlueprint)
     override fun getQuotedString(blueprint: ParserBlueprint<ParserRuleContext>): QuotedStringBlueprint? = backing[blueprint.quotedStringContext]?.let(::TransQuotedStringBlueprint)
+    override fun getPlainString(blueprint: ParserBlueprint<ParserRuleContext>): PlainStringBlueprint? = backing[blueprint.plainStringContext]?.let(::TransPlainStringBlueprint)
     override fun getQuotedCharacter(blueprint: ParserBlueprint<ParserRuleContext>): QuotedCharacterBlueprint? = backing[blueprint.quotedCharacterContext]?.let(::TransQuotedCharacterBlueprint)
     override fun getNumber(blueprint: ParserBlueprint<ParserRuleContext>): NumberBlueprint? = backing[blueprint.numberContext]?.let(::TransNumberBlueprint)
     override fun getMemberFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): MemberFunctionCallBlueprint? = backing[blueprint.memberFunctionCallContext]?.let(::TransMemberFunctionCallBlueprint)
@@ -293,6 +295,27 @@ inline class TransVariableValueBlueprint(override val backing: ParserRuleContext
     override fun getMemberVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): MemberVariableReferenceBlueprint? =
         backing[blueprint.memberVariableReferenceContext]?.let(::TransMemberVariableReferenceBlueprint)
 
+    override fun getVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): VariableReferenceBlueprint? = backing[blueprint.variableReferenceContext]?.let(::TransVariableReferenceBlueprint)
+}
+
+interface StringValueBlueprint : KnolusRuleBlueprint {
+    fun getQuotedString(blueprint: ParserBlueprint<ParserRuleContext>): QuotedStringBlueprint?
+    fun getPlainString(blueprint: ParserBlueprint<ParserRuleContext>): PlainStringBlueprint?
+    fun getQuotedCharacter(blueprint: ParserBlueprint<ParserRuleContext>): QuotedCharacterBlueprint?
+    fun getMemberFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): MemberFunctionCallBlueprint?
+    fun getFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): FunctionCallBlueprint?
+    fun getMemberVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): MemberVariableReferenceBlueprint?
+    fun getVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): VariableReferenceBlueprint?
+}
+
+inline class TransStringValueBlueprint(override val backing: ParserRuleContext) : TransRuleBlueprint, StringValueBlueprint {
+    override fun getQuotedString(blueprint: ParserBlueprint<ParserRuleContext>): QuotedStringBlueprint? = backing[blueprint.quotedStringContext]?.let(::TransQuotedStringBlueprint)
+    override fun getPlainString(blueprint: ParserBlueprint<ParserRuleContext>): PlainStringBlueprint? = backing[blueprint.plainStringContext]?.let(::TransPlainStringBlueprint)
+    override fun getQuotedCharacter(blueprint: ParserBlueprint<ParserRuleContext>): QuotedCharacterBlueprint? = backing[blueprint.quotedCharacterContext]?.let(::TransQuotedCharacterBlueprint)
+    override fun getMemberFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): MemberFunctionCallBlueprint? = backing[blueprint.memberFunctionCallContext]?.let(::TransMemberFunctionCallBlueprint)
+    override fun getFunctionCall(blueprint: ParserBlueprint<ParserRuleContext>): FunctionCallBlueprint? = backing[blueprint.functionCallContext]?.let(::TransFunctionCallBlueprint)
+    override fun getMemberVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): MemberVariableReferenceBlueprint? =
+        backing[blueprint.memberVariableReferenceContext]?.let(::TransMemberVariableReferenceBlueprint)
     override fun getVariableReference(blueprint: ParserBlueprint<ParserRuleContext>): VariableReferenceBlueprint? = backing[blueprint.variableReferenceContext]?.let(::TransVariableReferenceBlueprint)
 }
 
@@ -351,6 +374,25 @@ inline class TransQuotedStringBlueprint(override val backing: ParserRuleContext)
             KnolusTokenBlueprint.TokenType.STRING_CHARACTERS -> TransTokenBlueprint(ctx.symbol)
             KnolusTokenBlueprint.TokenType.QUOTED_STRING_LINE_BREAK -> TransTokenBlueprint(ctx.symbol)
             KnolusTokenBlueprint.TokenType.STRING_WHITESPACE -> TransTokenBlueprint(ctx.symbol)
+
+            else -> null
+        }
+    }
+}
+
+interface PlainStringBlueprint : KnolusTypeBlueprint {
+    fun getTokens(blueprint: ParserBlueprint<ParserRuleContext>): List<KnolusTokenBlueprint>
+}
+
+inline class TransPlainStringBlueprint(override val backing: ParserRuleContext) : TransRuleBlueprint, PlainStringBlueprint {
+    override fun getTokens(blueprint: ParserBlueprint<ParserRuleContext>): List<KnolusTokenBlueprint> = backing.children.mapNotNull { ctx ->
+        if (ctx !is TerminalNode) {
+            return@mapNotNull null
+        }
+
+        return@mapNotNull when (blueprint.rawToTokenType[ctx.symbol.type]) {
+            KnolusTokenBlueprint.TokenType.ESCAPES -> TransTokenBlueprint(ctx.symbol)
+            KnolusTokenBlueprint.TokenType.PLAIN_CHARACTERS -> TransTokenBlueprint(ctx.symbol)
 
             else -> null
         }

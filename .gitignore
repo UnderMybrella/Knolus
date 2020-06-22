@@ -133,6 +133,7 @@ src/main/gen
 core/src/main/antlr/gen
 example/src/main/antlr/gen
 example/src/main/antlr/Knolus*
-example/src/main/antlr/LibLexer*
+example/src/main/antlr/LibLexer.g4
+example/src/main/antlr/TemplateCommandLexer.g4
 
 */build/

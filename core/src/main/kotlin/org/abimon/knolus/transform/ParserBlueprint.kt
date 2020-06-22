@@ -25,10 +25,12 @@ interface ParserBlueprint<R : ParserRuleContext> {
     val variableReferenceContext: Class<out R>
     val memberVariableReferenceContext: Class<out R>
     val variableValueContext: Class<out R>
+    val stringValueContext: Class<out R>
     val arrayContext: Class<out R>
     val arrayContentsContext: Class<out R>
     val boolContext: Class<out R>
     val quotedStringContext: Class<out R>
+    val plainStringContext: Class<out R>
     val quotedCharacterContext: Class<out R>
     val quotedStringVariableReferenceContext: Class<out R>
     val numberContext: Class<out R>
@@ -99,10 +101,12 @@ class ReflectiveParserBlueprint<R : ParserRuleContext, P : Parser> private const
     override val variableReferenceContext: Class<out R> by lazy { contextClasses.getValue("VariableReferenceContext") }
     override val memberVariableReferenceContext: Class<out R> by lazy { contextClasses.getValue("MemberVariableReferenceContext") }
     override val variableValueContext: Class<out R> by lazy { contextClasses.getValue("VariableValueContext") }
+    override val stringValueContext: Class<out R> by lazy { contextClasses.getValue("StringValueContext") }
     override val arrayContext: Class<out R> by lazy { contextClasses.getValue("ArrayContext") }
     override val arrayContentsContext: Class<out R> by lazy { contextClasses.getValue("ArrayContentsContext") }
     override val boolContext: Class<out R> by lazy { contextClasses.getValue("BoolContext") }
     override val quotedStringContext: Class<out R> by lazy { contextClasses.getValue("QuotedStringContext") }
+    override val plainStringContext: Class<out R> by lazy { contextClasses.getValue("PlainStringContext") }
     override val quotedCharacterContext: Class<out R> by lazy { contextClasses.getValue("QuotedCharacterContext") }
     override val quotedStringVariableReferenceContext: Class<out R> by lazy { contextClasses.getValue("QuotedStringVariableReferenceContext") }
     override val numberContext: Class<out R> by lazy { contextClasses.getValue("NumberContext") }

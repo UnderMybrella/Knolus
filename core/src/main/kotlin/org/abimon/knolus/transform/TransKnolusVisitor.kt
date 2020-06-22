@@ -35,41 +35,45 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         const val VARIABLE_DECL_VISIT_DENIED = 0x1E01
         const val VARIABLE_ASSIGN_VISIT_DENIED = 0x1E02
         const val VARIABLE_VALUE_VISIT_DENIED = 0x1E03
-        const val BOOLEAN_VISIT_DENIED = 0x1E04
-        const val QUOTED_STRING_VISIT_DENIED = 0x1E05
-        const val QUOTED_CHARACTER_VISIT_DENIED = 0x1E06
-        const val VARIABLE_REF_VISIT_DENIED = 0x1E07
-        const val MEMBER_VARIABLE_REF_VISIT_DENIED = 0x1E08
-        const val FUNCTION_CALL_VISIT_DENIED = 0x1E09
-        const val MEMBER_FUNCTION_CALL_VISIT_DENIED = 0x1E0A
-        const val FUNCTION_CALL_PARAM_VISIT_DENIED = 0x1E0B
-        const val NUMBER_VISIT_DENIED = 0x1E0C
-        const val WHOLE_NUMBER_VISIT_DENIED = 0x1E0D
-        const val DECIMAL_NUMBER_VISIT_DENIED = 0x1E0E
-        const val EXPRESSION_VISIT_DENIED = 0x1E0F
-        const val EXPRESSION_OPERATION_VISIT_DENIED = 0x1E10
-        const val ARRAY_VISIT_DENIED = 0x1E11
-        const val ARRAY_CONTENTS_VISIT_DENIED = 0x1E12
+        const val STRING_VALUE_VISIT_DENIED = 0x1E04
+        const val BOOLEAN_VISIT_DENIED = 0x1E05
+        const val QUOTED_STRING_VISIT_DENIED = 0x1E06
+        const val PLAIN_STRING_VISIT_DENIED = 0x1E07
+        const val QUOTED_CHARACTER_VISIT_DENIED = 0x1E08
+        const val VARIABLE_REF_VISIT_DENIED = 0x1E09
+        const val MEMBER_VARIABLE_REF_VISIT_DENIED = 0x1E0A
+        const val FUNCTION_CALL_VISIT_DENIED = 0x1E0B
+        const val MEMBER_FUNCTION_CALL_VISIT_DENIED = 0x1E0C
+        const val FUNCTION_CALL_PARAM_VISIT_DENIED = 0x1E0D
+        const val NUMBER_VISIT_DENIED = 0x1E0E
+        const val WHOLE_NUMBER_VISIT_DENIED = 0x1E0F
+        const val DECIMAL_NUMBER_VISIT_DENIED = 0x1E10
+        const val EXPRESSION_VISIT_DENIED = 0x1E11
+        const val EXPRESSION_OPERATION_VISIT_DENIED = 0x1E12
+        const val ARRAY_VISIT_DENIED = 0x1E13
+        const val ARRAY_CONTENTS_VISIT_DENIED = 0x1E14
 
         const val SCOPE_RESULT_DENIED = 0x1F00
         const val VARIABLE_DECL_RESULT_DENIED = 0x1F01
         const val VARIABLE_ASSIGN_RESULT_DENIED = 0x1F02
         const val VARIABLE_VALUE_RESULT_DENIED = 0x1F03
-        const val BOOLEAN_RESULT_DENIED = 0x1F04
-        const val QUOTED_STRING_RESULT_DENIED = 0x1F05
-        const val QUOTED_CHARACTER_RESULT_DENIED = 0x1F06
-        const val VARIABLE_REF_RESULT_DENIED = 0x1F07
-        const val MEMBER_VARIABLE_REF_RESULT_DENIED = 0x1F08
-        const val FUNCTION_CALL_RESULT_DENIED = 0x1F09
-        const val MEMBER_FUNCTION_CALL_RESULT_DENIED = 0x1F0A
-        const val FUNCTION_CALL_PARAM_RESULT_DENIED = 0x1F0B
-        const val NUMBER_RESULT_DENIED = 0x1F0C
-        const val WHOLE_NUMBER_RESULT_DENIED = 0x1F0D
-        const val DECIMAL_NUMBER_RESULT_DENIED = 0x1F0E
-        const val EXPRESSION_RESULT_DENIED = 0x1F0F
-        const val EXPRESSION_OPERATION_RESULT_DENIED = 0x1F10
-        const val ARRAY_RESULT_DENIED = 0x1F11
-        const val ARRAY_CONTENTS_RESULT_DENIED = 0x1F12
+        const val STRING_VALUE_RESULT_DENIED = 0x1F04
+        const val BOOLEAN_RESULT_DENIED = 0x1F05
+        const val QUOTED_STRING_RESULT_DENIED = 0x1F06
+        const val PLAIN_STRING_RESULT_DENIED = 0x1F07
+        const val QUOTED_CHARACTER_RESULT_DENIED = 0x1F08
+        const val VARIABLE_REF_RESULT_DENIED = 0x1F09
+        const val MEMBER_VARIABLE_REF_RESULT_DENIED = 0x1F0A
+        const val FUNCTION_CALL_RESULT_DENIED = 0x1F0B
+        const val MEMBER_FUNCTION_CALL_RESULT_DENIED = 0x1F0C
+        const val FUNCTION_CALL_PARAM_RESULT_DENIED = 0x1F0D
+        const val NUMBER_RESULT_DENIED = 0x1F0E
+        const val WHOLE_NUMBER_RESULT_DENIED = 0x1F0F
+        const val DECIMAL_NUMBER_RESULT_DENIED = 0x1F10
+        const val EXPRESSION_RESULT_DENIED = 0x1F11
+        const val EXPRESSION_OPERATION_RESULT_DENIED = 0x1F12
+        const val ARRAY_RESULT_DENIED = 0x1F13
+        const val ARRAY_CONTENTS_RESULT_DENIED = 0x1F14
     }
 
     constructor(restrictions: KnolusTransVisitorRestrictions<*>, parser: Parser) : this(restrictions, parser, ReflectiveParserBlueprint(parser))
@@ -167,6 +171,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
             (if (ctx.getNullToken(blueprint) != null) KorneaResult.successVar(KnolusConstants.Null) else null)
             ?: ctx.getQuotedCharacter(blueprint)?.let(this::visitQuotedCharacter)
             ?: ctx.getQuotedString(blueprint)?.let(this::visitQuotedString)
+            ?: ctx.getPlainString(blueprint)?.let(this::visitPlainString)
             ?: ctx.getNumber(blueprint)?.let(this::visitNumber)
             ?: ctx.getVariableReference(blueprint)?.let(this::visitVariableReference)
             ?: ctx.getMemberVariableReference(blueprint)?.let(this::visitMemberVariableReference)
@@ -183,6 +188,31 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         return variableValue.flatMapOrSelf { value ->
             restrictions.shouldTakeVariableValue(ctx, value)
                 .doOnFailure { KorneaResult.WithErrorDetails.asIllegalState(VARIABLE_VALUE_RESULT_DENIED, "Restriction denied variable value result", it) }
+                .takeUnless { it is KorneaResult.Success<*> }
+                ?.cast()
+        }
+    }
+
+    override fun visitStringValue(ctx: StringValueBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusTypedValue>> {
+        if (restrictions.canVisitStringValue(ctx) !is KorneaResult.Success<*>)
+            return KorneaResult.errorAsIllegalState(STRING_VALUE_VISIT_DENIED, "Restriction denied string value visit")
+
+        val variableValue =
+            ctx.getQuotedCharacter(blueprint)?.let(this::visitQuotedCharacter)
+            ?: ctx.getQuotedString(blueprint)?.let(this::visitQuotedString)
+            ?: ctx.getPlainString(blueprint)?.let(this::visitPlainString)
+            ?: ctx.getVariableReference(blueprint)?.let(this::visitVariableReference)
+            ?: ctx.getMemberVariableReference(blueprint)?.let(this::visitMemberVariableReference)
+            ?: ctx.getFunctionCall(blueprint)?.let(this::visitFunctionCall)
+            ?: ctx.getMemberFunctionCall(blueprint)?.let(this::visitMemberFunctionCall)
+            ?: KorneaResult.errorAsIllegalState(
+                NO_VALID_VARIABLE_VALUE,
+                "No valid variable value in \"${ctx.matchingText()}\" (${ctx.toString(parser)})"
+            )
+
+        return variableValue.flatMapOrSelf { value ->
+            restrictions.shouldTakeStringValue(ctx, value)
+                .doOnFailure { KorneaResult.WithErrorDetails.asIllegalState(STRING_VALUE_RESULT_DENIED, "Restriction denied string value result", it) }
                 .takeUnless { it is KorneaResult.Success<*> }
                 ?.cast()
         }
@@ -249,6 +279,38 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         return KorneaResult.successVar(lazyStr).flatMapOrSelf { string ->
             restrictions.shouldTakeQuotedString(ctx, string)
                 .doOnFailure { KorneaResult.WithErrorDetails.asIllegalState(QUOTED_STRING_RESULT_DENIED, "Restriction denied quoted string result", it) }
+                .takeUnless { it is KorneaResult.Success<*> }
+                ?.cast()
+        }
+    }
+
+    override fun visitPlainString(ctx: PlainStringBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusString>> {
+        if (restrictions.canVisitPlainString(ctx) !is KorneaResult.Success<*>)
+            return KorneaResult.errorAsIllegalState(PLAIN_STRING_VISIT_DENIED, "Restriction denied plain string visit")
+
+        val builder = StringBuilder()
+
+        ctx.getTokens(blueprint).forEach { node ->
+            when (node.getTokenType(blueprint)) {
+                KnolusTokenBlueprint.TokenType.ESCAPES -> {
+                    when (val c = node.text[1]) {
+                        'b' -> builder.append('\b')
+                        'f' -> builder.append('\u000C')
+                        'n' -> builder.append('\n')
+                        'r' -> builder.append('\r')
+                        't' -> builder.append('\t')
+                        'u' -> builder.append(node.text.substring(2).toInt(16).toChar())
+                        else -> builder.append(c)
+                    }
+                }
+
+                KnolusTokenBlueprint.TokenType.PLAIN_CHARACTERS -> builder.append(node.text)
+            }
+        }
+
+        return KorneaResult.successVar(KnolusString(builder.toString())).flatMapOrSelf { string ->
+            restrictions.shouldTakePlainString(ctx, string)
+                .doOnFailure { KorneaResult.WithErrorDetails.asIllegalState(PLAIN_STRING_RESULT_DENIED, "Restriction denied plain string result", it) }
                 .takeUnless { it is KorneaResult.Success<*> }
                 ?.cast()
         }
@@ -509,7 +571,14 @@ fun parseKnolusTransScope(text: String, restrictions: KnolusTransVisitorRestrict
 
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
-fun <P: Parser, R, V: ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(text: String, restrictions: KnolusTransVisitorRestrictions<*>, lexerInit: (CharStream) -> Lexer, parserInit: (TokenStream) -> P, visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor) -> V, selectRule: (parser: P, visitor: V) -> KorneaResult<R>): KorneaResult<R> {
+fun <P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(
+    text: String,
+    restrictions: KnolusTransVisitorRestrictions<*>,
+    lexerInit: (CharStream) -> Lexer,
+    parserInit: (TokenStream) -> P,
+    visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor) -> V,
+    selectRule: (parser: P, visitor: V) -> KorneaResult<R>
+): KorneaResult<R> {
     try {
         val charStream = CharStreams.fromString(text)
         val lexer = lexerInit(charStream)

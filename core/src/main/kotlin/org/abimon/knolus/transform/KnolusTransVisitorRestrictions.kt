@@ -2,6 +2,7 @@ package org.abimon.knolus.transform
 
 import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.knolus.ExpressionOperator
+import org.abimon.knolus.Knolus
 import org.abimon.knolus.KnolusUnion
 import org.abimon.knolus.types.*
 import org.abimon.kornea.errors.common.KorneaResult
@@ -110,6 +111,12 @@ interface KnolusTransVisitorRestrictions<T> {
         value: KnolusUnion.VariableValue<VT>,
     ): KorneaResult<T> = KorneaResult.empty()
 
+    fun canVisitStringValue(context: StringValueBlueprint): KorneaResult<T> = KorneaResult.empty()
+    fun <VT : KnolusTypedValue> shouldTakeStringValue(
+        context: StringValueBlueprint,
+        value: KnolusUnion.VariableValue<VT>
+    ): KorneaResult<T> = KorneaResult.empty()
+
     fun canVisitBoolean(context: BooleanBlueprint): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeBoolean(context: BooleanBlueprint, bool: KnolusUnion.VariableValue<KnolusBoolean>): KorneaResult<T> = KorneaResult.empty()
 
@@ -117,6 +124,12 @@ interface KnolusTransVisitorRestrictions<T> {
     fun shouldTakeQuotedString(
         context: QuotedStringBlueprint,
         string: KnolusUnion.VariableValue<KnolusLazyString>,
+    ): KorneaResult<T> = KorneaResult.empty()
+
+    fun canVisitPlainString(context: PlainStringBlueprint): KorneaResult<T> = KorneaResult.empty()
+    fun shouldTakePlainString(
+        context: PlainStringBlueprint,
+        string: KnolusUnion.VariableValue<KnolusString>
     ): KorneaResult<T> = KorneaResult.empty()
 
     fun canVisitQuotedCharacter(context: QuotedCharacterBlueprint): KorneaResult<T> = KorneaResult.empty()
