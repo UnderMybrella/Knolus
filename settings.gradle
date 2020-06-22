@@ -7,5 +7,9 @@ pluginManagement {
         maven { url 'https://plugins.gradle.org/m2/' }
     }
 }
-rootProject.name = 'Knolus'
+//rootProject.name = 'Knolus'
 
+include ':core'
+include ':example'
+
+rootProject.children.each { child -> child.name = "knolus-${child.name}"}

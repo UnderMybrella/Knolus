@@ -130,4 +130,7 @@ fabric.properties
 
 *Bootstrap.kt
 src/main/gen
-src/main/antlr/gen
+core/src/main/antlr/gen
+example/src/main/antlr/gen
+
+*/build/
