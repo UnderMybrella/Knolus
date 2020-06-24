@@ -5,11 +5,14 @@ import org.abimon.knolus.ExpressionOperator
 import org.abimon.knolus.Knolus
 import org.abimon.knolus.KnolusUnion
 import org.abimon.knolus.types.*
+import org.abimon.kornea.annotations.ChangedSince
 import org.abimon.kornea.errors.common.KorneaResult
 import org.abimon.kornea.errors.common.StaticSuccess
 import org.abimon.kornea.errors.common.success
 
+@ChangedSince(Knolus.VERSION_1_3_0)
 interface KnolusTransVisitorRestrictions<T> {
+    @ChangedSince(Knolus.VERSION_1_3_0)
     interface Permissive<T>: KnolusTransVisitorRestrictions<T> {
         companion object: Permissive<StaticSuccess> {
             override fun defaultValue(): KorneaResult<StaticSuccess> = KorneaResult.success()
@@ -33,6 +36,9 @@ interface KnolusTransVisitorRestrictions<T> {
 
         override fun <VT : KnolusTypedValue> shouldTakeVariableValue(context: VariableValueBlueprint, value: KnolusUnion.VariableValue<VT>): KorneaResult<T> = defaultValue()
 
+        override fun canVisitStringValue(context: StringValueBlueprint): KorneaResult<T> = defaultValue()
+        override fun <VT : KnolusTypedValue> shouldTakeStringValue(context: StringValueBlueprint, value: KnolusUnion.VariableValue<VT>): KorneaResult<T> = defaultValue()
+
         override fun canVisitBoolean(context: BooleanBlueprint): KorneaResult<T> = defaultValue()
 
         override fun shouldTakeBoolean(context: BooleanBlueprint, bool: KnolusUnion.VariableValue<KnolusBoolean>): KorneaResult<T> = defaultValue()
@@ -44,6 +50,9 @@ interface KnolusTransVisitorRestrictions<T> {
         override fun canVisitQuotedCharacter(context: QuotedCharacterBlueprint): KorneaResult<T> = defaultValue()
 
         override fun shouldTakeQuotedCharacter(context: QuotedCharacterBlueprint, char: KnolusUnion.VariableValue<KnolusChar>): KorneaResult<T> = defaultValue()
+
+        override fun canVisitPlainString(context: PlainStringBlueprint): KorneaResult<T> = defaultValue()
+        override fun shouldTakePlainString(context: PlainStringBlueprint, string: KnolusUnion.VariableValue<KnolusString>): KorneaResult<T> = defaultValue()
 
         override fun canVisitVariableReference(context: VariableReferenceBlueprint): KorneaResult<T> = defaultValue()
 

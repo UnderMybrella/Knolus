@@ -129,7 +129,7 @@ fabric.properties
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 
 *Bootstrap.kt
-src/main/gen
+*/src/main/gen
 core/src/main/antlr/gen
 example/src/main/antlr/gen
 example/src/main/antlr/Knolus*

@@ -1,19 +1,12 @@
 package org.abimon.knolus.transform
 
-import org.abimon.antlr.knolus.KnolusLexer
-import org.abimon.antlr.knolus.KnolusParser
 import org.abimon.knolus.*
-import org.abimon.knolus.context.KnolusContext
-import org.abimon.knolus.context.KnolusScopeContext
-import org.abimon.knolus.restrictions.KnolusRestriction
-import org.abimon.knolus.restrictions.KnolusVisitorRestrictions
 import org.abimon.knolus.types.*
 import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.*
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.kornea.toolkit.common.switchIfNull
 
 @AvailableSince(Knolus.VERSION_1_2_0)
@@ -546,7 +539,8 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
 
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
-fun parseKnolusTransScope(text: String, restrictions: KnolusTransVisitorRestrictions<*>, lexerInit: (CharStream) -> Lexer, parserInit: (TokenStream) -> Parser): KorneaResult<KnolusUnion.ScopeType> {
+//Restrictions here are relaxed due to Java/Kotlin interop
+fun parseKnolusTransScope(text: String, restrictions: KnolusTransVisitorRestrictions<*>, lexerInit: (CharStream?) -> Lexer, parserInit: (TokenStream?) -> Parser): KorneaResult<KnolusUnion.ScopeType> {
     try {
         val charStream = CharStreams.fromString(text)
         val lexer = lexerInit(charStream)
@@ -571,14 +565,15 @@ fun parseKnolusTransScope(text: String, restrictions: KnolusTransVisitorRestrict
 
 @Suppress("UnnecessaryVariable")
 @ExperimentalUnsignedTypes
-fun <P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(
+//Restrictions here on nullability are relaxed due to Java/Kotlin interop
+fun <L: Lexer, P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(
     text: String,
     restrictions: KnolusTransVisitorRestrictions<*>,
-    lexerInit: (CharStream) -> Lexer,
-    parserInit: (TokenStream) -> P,
+    lexerInit: (CharStream?) -> L,
+    parserInit: (TokenStream?) -> P,
     visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor) -> V,
-    selectRule: (parser: P, visitor: V) -> KorneaResult<R>
-): KorneaResult<R> {
+    visit: (parser: P, visitor: V) -> KorneaResult<R>
+): KorneaResult<KnolusParserResult<R, L, CommonTokenStream, P, V>> {
     try {
         val charStream = CharStreams.fromString(text)
         val lexer = lexerInit(charStream)
@@ -595,7 +590,26 @@ fun <P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRule(
         val delegate = TransKnolusVisitor(restrictions, parser, blueprint)
         val visitor = visitorInit(restrictions, parser, delegate)
 
-        return selectRule(parser, visitor)
+        return visit(parser, visitor).map { union -> KnolusParserResult(union, lexer, tokens, parser, visitor) }
+    } catch (pce: ParseCancellationException) {
+        return KorneaResult.thrown(pce)
+    }
+}
+
+@Suppress("UnnecessaryVariable")
+@ExperimentalUnsignedTypes
+fun <L: Lexer, T: BufferedTokenStream, P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolusTransRuleWithState(
+    text: String,
+    state: KnolusParserState<R, L, T, P, V>,
+    visit: (parser: P, visitor: V) -> KorneaResult<R>
+): KorneaResult<R> {
+    try {
+        val charStream = CharStreams.fromString(text)
+        state.lexer.inputStream = charStream
+        state.tokenStream.tokenSource = state.lexer
+        state.parser.inputStream = state.tokenStream
+
+        return visit(state.parser, state.visitor)
     } catch (pce: ParseCancellationException) {
         return KorneaResult.thrown(pce)
     }
