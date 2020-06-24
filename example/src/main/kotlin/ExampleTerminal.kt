@@ -4,10 +4,8 @@ import org.abimon.antlr.knolus.ExampleParser
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusGlobalContext
 import org.abimon.knolus.modules.KnolusStringModule
+import org.abimon.knolus.modules.functionregistry.*
 import org.abimon.knolus.modules.functionregistry.registerFunction
-import org.abimon.knolus.modules.functionregistry.registerFunctionWithoutReturn
-import org.abimon.knolus.modules.functionregistry.registerUntypedFunction
-import org.abimon.knolus.modules.functionregistry.registerUntypedFunctionWithoutReturn
 import org.abimon.knolus.restrictions.CompoundKnolusRestriction
 import org.abimon.knolus.restrictions.KnolusRecursiveRestriction
 import org.abimon.knolus.transform.*
@@ -23,21 +21,21 @@ suspend fun main(args: Array<String>) {
     with(context) {
         KnolusStringModule.register(this)
 
-        registerFunctionWithoutReturn("println", objectTypeAsStringParameter("msg")) { _, msg -> println(msg) }
+        registerFunctionWithoutReturn("println", objectTypeAsStringParameter("msg")) { msg -> println(msg) }
 
-        registerFunction("factorial", intTypeParameter("i")) { context, i ->
+        registerFunctionWithContext("factorial", intTypeParameter("i")) { context, i ->
             println("Factorial of: $i")
-            if (i <= 1) return@registerFunction KnolusInt(i)
+            if (i <= 1) return@registerFunctionWithContext KnolusInt(i)
             val factorialResult = context.invokeFunction("factorial", KnolusInt(i - 1))
                 .flatMap { it.asNumber(context) }
                 .get()
                 .toInt()
 
-            return@registerFunction KnolusInt(i * factorialResult)
+            return@registerFunctionWithContext KnolusInt(i * factorialResult)
         }
 
         registerUntypedFunction("version") { context -> KnolusString("Version 1.2.0") }
-        registerFunctionWithoutReturn("echo", objectTypeAsStringParameter("line")) { context, line -> println(line) }
+        registerFunctionWithoutReturn("echo", objectTypeAsStringParameter("line")) { line -> println(line) }
     }
 
     var state: KnolusParserState<KnolusUnion, ExampleLexer, CommonTokenStream, ExampleParser, ExampleVisitor>? = null

@@ -145,8 +145,8 @@ fun <R, C: KnolusContext<out R>, T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedV
     addParameter(parameterSpec.withName("b"))
 
     return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
-        val a = typeSpec.transform(context, parameters.getValue("A") as V0).get()
-        val b = parameterSpec.transform(context, parameters.getValue("B") as V1).get()
+        val a = typeSpec.transform(parameters.getValue("A") as V0, context).get()
+        val b = parameterSpec.transform(parameters.getValue("B") as V1, context).get()
 
         func(a, b)
     }
@@ -155,15 +155,15 @@ fun <R, C: KnolusContext<out R>, T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedV
 fun <T, R, C: KnolusContext<out R>, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T, R, C>.setOperatorResultFunction(
     typeSpec: ParameterSpec<V0, P0, in R, C>,
     parameterSpec: ParameterSpec<V1, P1, in R, C>,
-    func: suspend (context: C, a: KorneaResult<P0>, b: KorneaResult<P1>) -> T,
+    func: suspend (a: KorneaResult<P0>, b: KorneaResult<P1>) -> T,
 ): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec.withName("a"))
     addParameter(parameterSpec.withName("b"))
 
     return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
-        val a = typeSpec.transform(context, parameters.getValue("A") as V0)
-        val b = parameterSpec.transform(context, parameters.getValue("B") as V1)
+        val a = typeSpec.transform(parameters.getValue("A") as V0, context)
+        val b = parameterSpec.transform(parameters.getValue("B") as V1, context)
 
-        func(context, a, b)
+        func(a, b)
     }
 }

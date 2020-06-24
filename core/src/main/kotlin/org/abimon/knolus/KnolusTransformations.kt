@@ -19,14 +19,14 @@ typealias KnolusGenericTransform<V, T> = KnolusTransform<V, T, KnolusContext<in 
 inline fun <V, T> asGenericTransform(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T): KnolusGenericTransform<V, T> = { t -> KorneaResult.success(lambda(t)) }
 inline fun <V, T> asGenericTransformOrNull(crossinline lambda: suspend V.(context: KnolusContext<Any?>) -> T?): KnolusGenericTransform<V, T> = { t -> KorneaResult.successOrEmpty(lambda(t)) }
 
-inline fun <V, T, R, C: KnolusContext<in R>> asTransform(crossinline lambda: suspend V.(context: C) -> T): KnolusTransform<V, T, C> = { t -> KorneaResult.success(lambda(t)) }
-inline fun <V, T, R, C: KnolusContext<in R>> asTransformOrNull(crossinline lambda: suspend V.(context: C) -> T?): KnolusTransform<V, T, C> = { t -> KorneaResult.successOrEmpty(lambda(t)) }
+inline fun <V, T, R, C : KnolusContext<in R>> asTransform(crossinline lambda: suspend V.(context: C) -> T): KnolusTransform<V, T, C> = { t -> KorneaResult.success(lambda(t)) }
+inline fun <V, T, R, C : KnolusContext<in R>> asTransformOrNull(crossinline lambda: suspend V.(context: C) -> T?): KnolusTransform<V, T, C> = { t -> KorneaResult.successOrEmpty(lambda(t)) }
 
-sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>> {
+sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C : KnolusContext<out R>> {
     abstract val name: String
     abstract val type: KnolusTypedValue.TypeInfo<V>
     abstract val default: T?
-    abstract val transformation: KnolusTransform<in V, T, C>
+//    abstract val transformation: KnolusTransform<in V, T, C>
 
     fun getMemberFunctionName(functionName: String): String =
         type.getMemberFunctionName(type.typeName, functionName)
@@ -39,27 +39,49 @@ sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R
 
     abstract infix fun withName(name: String): ParameterSpec<V, T, R, C>
     abstract infix fun withDefault(value: T?): ParameterSpec<V, T, R, C>
+    abstract fun asOptional(): ParameterSpec<V, KorneaResult<T>, R, C>
+
+    abstract suspend fun transform(self: V, context: C): KorneaResult<T>
 }
 
-data class RegularParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>>(
+data class RegularParameterSpec<V : KnolusTypedValue, T, R, in C : KnolusContext<out R>>(
     override val name: String,
     override val type: KnolusTypedValue.TypeInfo<V>,
     override val default: T?,
-    override val transformation: KnolusTransform<V, T, C>,
+    val transformation: KnolusTransform<V, T, C>,
 ) : ParameterSpec<V, T, R, C>() {
     override fun withName(name: String): ParameterSpec<V, T, R, C> = copy(name = name.sanitiseFunctionIdentifier())
     override fun withDefault(value: T?): ParameterSpec<V, T, R, C> = copy(default = value)
+    override fun asOptional(): ParameterSpec<V, KorneaResult<T>, R, C> = OptionalParameterSpec(name, type, KorneaResult.successOrEmpty(default), transformation)
+
+    override suspend fun transform(self: V, context: C): KorneaResult<T> = transformation(self, context)
 }
 
-data class TypeParameterSpec<V : KnolusTypedValue, T, R, in C: KnolusContext<out R>>(
+data class OptionalParameterSpec<V : KnolusTypedValue, T, R, in C : KnolusContext<out R>>(
+    override val name: String,
     override val type: KnolusTypedValue.TypeInfo<V>,
-    override val transformation: KnolusTransform<V, T, C>,
+    override val default: KorneaResult<T>,
+    val transformation: KnolusTransform<V, T, C>,
+) : ParameterSpec<V, KorneaResult<T>, R, C>() {
+    override fun withName(name: String): ParameterSpec<V, KorneaResult<T>, R, C> = copy(name = name.sanitiseFunctionIdentifier())
+    override fun withDefault(value: KorneaResult<T>?): ParameterSpec<V, KorneaResult<T>, R, C> = copy(default = value ?: KorneaResult.empty())
+    override fun asOptional(): ParameterSpec<V, KorneaResult<KorneaResult<T>>, R, C> = throw IllegalStateException("Already optional!")
+
+    override suspend fun transform(self: V, context: C): KorneaResult<KorneaResult<T>> = KorneaResult.success(transformation (self, context))
+}
+
+data class TypeParameterSpec<V : KnolusTypedValue, T, R, in C : KnolusContext<out R>>(
+    override val type: KnolusTypedValue.TypeInfo<V>,
+    val transformation: KnolusTransform<V, T, C>,
 ) : ParameterSpec<V, T, R, C>() {
     override val name: String = "self"
     override val default: T? = null
 
+    override suspend fun transform(self: V, context: C): KorneaResult<T> = transformation(self, context)
+
     override fun withName(name: String): ParameterSpec<V, T, R, C> = RegularParameterSpec(name, type, null, transformation)
     override fun withDefault(value: T?): ParameterSpec<V, T, R, C> = RegularParameterSpec(name, type, value, transformation)
+    override fun asOptional(): ParameterSpec<V, KorneaResult<T>, R, C> = OptionalParameterSpec(name, type, KorneaResult.empty(), transformation)
 }
 
 @ExperimentalUnsignedTypes
@@ -205,17 +227,17 @@ object KnolusTransformations {
 
 //inline fun <reified T: KnolusTypedValue.TypeInfo<*>, R> typeParameterFor(noinline transformation: KnolusTransform<R>): TypeParameterSpec<R> = TypeParameterSpec(T::class.objectInstance!!, transformation)
 
-fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.operatorSpecWith(
+fun <V : KnolusTypedValue, T, R, C : KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.operatorSpecWith(
     transformation: KnolusTransform<V, T, C>,
 ) = TypeParameterSpec<V, T, R, C>(this, transformation)
 
-fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(
+fun <V : KnolusTypedValue, T, R, C : KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.parameterSpecWith(
     name: String,
     default: T? = null,
     transformation: KnolusTransform<V, T, C>,
 ) = RegularParameterSpec<V, T, R, C>(name, this, default, transformation)
 
-fun <V : KnolusTypedValue, T, R, C: KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.typeSpecWith(
+fun <V : KnolusTypedValue, T, R, C : KnolusContext<in R>> KnolusTypedValue.TypeInfo<V>.typeSpecWith(
     name: String? = null,
     default: T? = null,
     transformation: KnolusTransform<V, T, C>,
@@ -316,23 +338,20 @@ fun nullTypeAsStringParameter(name: String? = null, default: String? = null) =
 fun undefinedTypeAsStringParameter(name: String? = null, default: String? = null) =
     KnolusConstants.Undefined.typeSpecWith(name, default, KnolusTransformations.TO_STRING)
 
-suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> ParameterSpec<V, T, R, C>.transform(context: C, value: V): KorneaResult<T> =
-    transformation(value, context)
-
-suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.getValue(
+suspend fun <R, C : KnolusContext<out R>, V : KnolusTypedValue, T : Any?> Map<String, KnolusTypedValue>.getValue(
     context: C,
     spec: ParameterSpec<V, T, R, C>,
 ): KorneaResult<T> {
     val value = get(spec.name.sanitiseFunctionIdentifier())
                 ?: return KorneaResult.success(spec.default ?: throw NoSuchElementException("Parameter ${spec.name} was not passed, despite being mandatory"))
 
-    return spec.transform(context, value as V)
+    return spec.transform(value as V, context)
 }
 
-suspend fun <R, C: KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
+suspend fun <R, C : KnolusContext<out R>, V : KnolusTypedValue, T> Map<String, KnolusTypedValue>.get(
     context: C,
     spec: ParameterSpec<V, T, R, C>,
 ): KorneaResult<T> {
     val value = get(spec.name.sanitiseFunctionIdentifier()) as? V ?: return KorneaResult.successOrEmpty(spec.default)
-    return spec.transform(context, value)
+    return spec.transform(value, context)
 }
