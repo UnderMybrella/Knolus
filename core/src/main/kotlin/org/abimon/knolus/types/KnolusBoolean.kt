@@ -6,7 +6,9 @@ import org.abimon.kornea.errors.common.KorneaResult
 data class KnolusBoolean(val boolean: Boolean) : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Boolean", "Object")
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusBoolean
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusBoolean
+        override fun asInstance(instance: Any?): KnolusBoolean = instance as KnolusBoolean
+        override fun asInstanceSafe(instance: Any?): KnolusBoolean? = instance as? KnolusBoolean
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean>

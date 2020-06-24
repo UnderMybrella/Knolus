@@ -7,7 +7,9 @@ interface KnolusNumericalType : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusNumericalType> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Number", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusNumericalType
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusNumericalType
+        override fun asInstance(instance: Any?): KnolusNumericalType = instance as KnolusNumericalType
+        override fun asInstanceSafe(instance: Any?): KnolusNumericalType? = instance as? KnolusNumericalType
     }
 
     val number: Number
@@ -21,7 +23,9 @@ inline class KnolusInt(override val number: Int) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusInt> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Int", "Number", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusInt
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusInt
+        override fun asInstance(instance: Any?): KnolusInt = instance as KnolusInt
+        override fun asInstanceSafe(instance: Any?): KnolusInt? = instance as? KnolusInt
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusInt>
@@ -32,7 +36,9 @@ inline class KnolusDouble(override val number: Double) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusDouble> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Double", "Number", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusDouble
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusDouble
+        override fun asInstance(instance: Any?): KnolusDouble = instance as KnolusDouble
+        override fun asInstanceSafe(instance: Any?): KnolusDouble? = instance as? KnolusDouble
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusDouble>
@@ -43,7 +49,9 @@ inline class KnolusChar(val char: Char) : KnolusNumericalType {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusChar> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Char", "Number", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusChar
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusChar
+        override fun asInstance(instance: Any?): KnolusChar = instance as KnolusChar
+        override fun asInstanceSafe(instance: Any?): KnolusChar? = instance as? KnolusChar
     }
 
     override val number: Number

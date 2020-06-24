@@ -11,7 +11,9 @@ data class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>) 
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLazyString> {
         override val typeHierarchicalNames: Array<String> = arrayOf("LazyString", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyString
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusLazyString
+        override fun asInstance(instance: Any?): KnolusLazyString = instance as KnolusLazyString
+        override fun asInstanceSafe(instance: Any?): KnolusLazyString? = instance as? KnolusLazyString
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyString>

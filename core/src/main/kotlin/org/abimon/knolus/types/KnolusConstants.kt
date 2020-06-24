@@ -13,7 +13,9 @@ sealed class KnolusConstants {
         override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = if (context.nullTypeCoercible) KorneaResult.success("[null]") else KorneaResult.Empty.ofNull()
         override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = if (context.nullTypeCoercible) KorneaResult.success(false) else KorneaResult.Empty.ofNull()
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value === Null
+        override fun isInstance(instance: Any?): Boolean = instance === Null
+        override fun asInstance(instance: Any?): Null = instance as Null
+        override fun asInstanceSafe(instance: Any?): Null? = instance as? Null
     }
 
     object Undefined : KnolusTypedValue, KnolusTypedValue.TypeInfo<Undefined> {
@@ -25,6 +27,8 @@ sealed class KnolusConstants {
         override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = if (context.undefinedTypeCoercible) KorneaResult.success("[undefined]") else KorneaResult.Empty.ofUndefined()
         override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = if (context.undefinedTypeCoercible) KorneaResult.success(false) else KorneaResult.Empty.ofUndefined()
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value === Undefined
+        override fun isInstance(instance: Any?): Boolean = instance === Undefined
+        override fun asInstance(instance: Any?): Undefined = instance as Undefined
+        override fun asInstanceSafe(instance: Any?): Undefined? = instance as? Undefined
     }
 }

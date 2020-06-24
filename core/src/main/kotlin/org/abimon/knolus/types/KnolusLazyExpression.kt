@@ -11,7 +11,9 @@ data class KnolusLazyExpression(
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLazyExpression> {
         override val typeHierarchicalNames: Array<String> = arrayOf("Expression", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyExpression
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusLazyExpression
+        override fun asInstance(instance: Any?): KnolusLazyExpression = instance as KnolusLazyExpression
+        override fun asInstanceSafe(instance: Any?): KnolusLazyExpression? = instance as? KnolusLazyExpression
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyExpression>

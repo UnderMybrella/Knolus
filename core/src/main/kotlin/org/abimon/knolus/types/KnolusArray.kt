@@ -1,8 +1,6 @@
 package org.abimon.knolus.types
 
-import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
-import org.abimon.knolus.types.KnolusArray.TypeInfo.evaluateOrSelf
 import org.abimon.kornea.errors.common.*
 
 sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : KnolusTypedValue {
@@ -30,7 +28,9 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
                 else -> KorneaResult.successInline(this)
             }
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusArray<*>
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusArray<*>
+        override fun asInstance(instance: Any?): KnolusArray<*> = instance as KnolusArray<*>
+        override fun asInstanceSafe(instance: Any?): KnolusArray<*>? = instance as? KnolusArray<*>
     }
 
     private data class StableArray<T : KnolusTypedValue>(override val array: Array<T>) : KnolusArray<T>(array) {

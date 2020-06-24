@@ -16,7 +16,9 @@ data class KnolusLazyMemberFunctionCall(
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall> {
         override val typeHierarchicalNames: Array<String> = arrayOf("FunctionCall", "Reference", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusLazyMemberFunctionCall
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusLazyMemberFunctionCall
+        override fun asInstance(instance: Any?): KnolusLazyMemberFunctionCall = instance as KnolusLazyMemberFunctionCall
+        override fun asInstanceSafe(instance: Any?): KnolusLazyMemberFunctionCall? = instance as? KnolusLazyMemberFunctionCall
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall>

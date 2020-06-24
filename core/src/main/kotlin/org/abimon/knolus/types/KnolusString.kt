@@ -2,7 +2,6 @@ package org.abimon.knolus.types
 
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.toFormattedBoolean
-import org.abimon.knolus.toIntBaseN
 import org.abimon.knolus.toIntOrNullBaseN
 import org.abimon.kornea.errors.common.KorneaResult
 
@@ -10,7 +9,9 @@ inline class KnolusString(val string: String) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusString> {
         override val typeHierarchicalNames: Array<String> = arrayOf("String", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusString
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusString
+        override fun asInstance(instance: Any?): KnolusString = instance as KnolusString
+        override fun asInstanceSafe(instance: Any?): KnolusString? = instance as? KnolusString
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>

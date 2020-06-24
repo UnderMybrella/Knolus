@@ -8,7 +8,9 @@ data class KnolusPropertyReference(val variableName: String, val propertyName: S
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference> {
         override val typeHierarchicalNames: Array<String> = arrayOf("MemberVariableReference", "Reference", "Object")
 
-        override fun isInstance(value: KnolusTypedValue): Boolean = value is KnolusPropertyReference
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusPropertyReference
+        override fun asInstance(instance: Any?): KnolusPropertyReference = instance as KnolusPropertyReference
+        override fun asInstanceSafe(instance: Any?): KnolusPropertyReference? = instance as? KnolusPropertyReference
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference>
