@@ -5,12 +5,14 @@ package org.abimon.knolus.modules.functionregistry
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.KorneaResult
 
 //<T(.*?)> KnolusFunctionBuilder<(T\??)>
 //<T, R$1> KnolusFunctionBuilder<$2, R>
 
 inline fun <R, C : KnolusContext<out R>> functionBuilder() = KnolusFunctionBuilder<KnolusTypedValue?, R, C>()
+inline fun <T: KnolusTypedValue?, R, C : KnolusContext<out R>> typedFunctionBuilder() = KnolusFunctionBuilder<T, R, C>()
 
 fun <T, R, C : KnolusContext<out R>> KnolusFunctionBuilder<T, R, C>.setFunction(func: suspend () -> T): KnolusFunctionBuilder<T, R, C> {
     return setFunction { context: C, _: Map<String, KnolusTypedValue> -> func() }
@@ -272,6 +274,18 @@ fun <R, C : KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiOperator
             .build()
     )
 }
+
+@AvailableSince(Knolus.VERSION_1_4_0)
+fun <R, C : KnolusContext<out R>, P0, R0: KnolusTypedValue?, T: KnolusTypedValue.TypeInfo<R0>> KnolusContext<R>.registerCastingOperatorFunction(
+    typeSpec: ParameterSpec<*, P0, in R, C>,
+    castingTo: T,
+    func: suspend (self: P0) -> R0,
+) = register(
+    typeSpec.getMemberCastingOperatorName(castingTo),
+    typedFunctionBuilder<R0, R, C>()
+        .setMemberFunction(typeSpec, func)
+        .build()
+)
 
 /** Result Functions */
 fun <T, R, C : KnolusContext<out R>, P> KnolusFunctionBuilder<T, R, C>.setResultFunction(parameterSpec: ParameterSpec<*, P, in R, C>, func: suspend (parameter: KorneaResult<P>) -> T): KnolusFunctionBuilder<T, R, C> {

@@ -57,7 +57,7 @@ fun KnolusUnion.FunctionParameterType.matches(decl: KnolusDeclaredFunctionParame
 fun KnolusUnion.FunctionParameterType.fits(decl: KnolusDeclaredFunctionParameter<*>): Boolean = decl.fits(this)
 
 @ExperimentalUnsignedTypes
-class KnolusFunction<T, R, C: KnolusContext<out R>>(
+class KnolusFunction<out T, R, in C: KnolusContext<out R>>(
     val parameters: Array<KnolusDeclaredFunctionParameter<*>>,
     val variadicSupported: Boolean = false,
     val func: suspend (context: C, parameters: Map<String, KnolusTypedValue>) -> T,

@@ -37,6 +37,9 @@ sealed class ParameterSpec<V : KnolusTypedValue, T, R, in C : KnolusContext<out 
     fun getMemberOperatorName(operator: ExpressionOperator): String =
         type.getMemberOperatorName(type.typeName, operator)
 
+    fun getMemberCastingOperatorName(castingTo: KnolusTypedValue.TypeInfo<*>): String =
+        type.getMemberCastingOperatorName(type.typeName, castingTo.typeName)
+
     abstract infix fun withName(name: String): ParameterSpec<V, T, R, C>
     abstract infix fun withDefault(value: T?): ParameterSpec<V, T, R, C>
     abstract fun asOptional(): ParameterSpec<V, KorneaResult<T>, R, C>

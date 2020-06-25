@@ -3,6 +3,7 @@ package org.abimon.knolus.restrictions
 import org.abimon.knolus.*
 import org.abimon.knolus.context.KnolusContext
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.kornea.annotations.AvailableSince
 import org.abimon.kornea.errors.common.KorneaResult
 import org.abimon.kornea.errors.common.StaticSuccess
 import org.abimon.kornea.errors.common.success
@@ -69,6 +70,13 @@ interface KnolusRestriction<T> {
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
+    ): KorneaResult<T>
+
+    @AvailableSince(Knolus.VERSION_1_4_0)
+    fun canAskForCastingOperatorFunction(
+        context: KnolusContext<T>,
+        self: KnolusTypedValue,
+        castingTo: KnolusTypedValue.TypeInfo<*>,
     ): KorneaResult<T>
 
     fun createSubroutineRestrictions(

@@ -8,6 +8,7 @@ import org.abimon.knolus.restrictions.canAskAsParentForFunction
 import org.abimon.knolus.restrictions.canAskAsParentForVariable
 import org.abimon.knolus.types.*
 import org.abimon.kornea.errors.common.*
+import org.kornea.toolkit.common.filterToInstance
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -165,6 +166,21 @@ abstract class KnolusContext<R>(val parent: KnolusContext<R>?, val restrictions:
 
         return a.typeInfo.getMemberOperatorNames(operator).fold(KorneaResult.empty()) { acc, funcName ->
             acc.switchIfEmpty { invokeFunction(funcName, params) }
+        }
+    }
+
+    suspend fun <T: KnolusTypedValue> invokeCastingOperator(
+        self: KnolusTypedValue,
+        castingTo: KnolusTypedValue.TypeInfo<T>
+    ): KorneaResult<T> {
+        restrictions.canAskForCastingOperatorFunction(this, self, castingTo).doOnFailure { causedBy ->
+            return KorneaResult.errorAsIllegalState(ACCESS_DENIED, "KnolusRestriction denied access to casting operator function", causedBy)
+        }
+
+        val params = arrayOf(KnolusUnion.FunctionParameterType("self", self))
+
+        return self.typeInfo.getMemberCastingOperatorNames(castingTo.typeName).fold(KorneaResult.empty()) { acc, funcName ->
+            acc.switchIfEmpty { invokeFunction(funcName, params).filterToInstance(castingTo) }
         }
     }
 

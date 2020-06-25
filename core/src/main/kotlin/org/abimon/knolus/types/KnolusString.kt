@@ -17,9 +17,15 @@ inline class KnolusString(val string: String) : KnolusTypedValue {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(string)
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> =
-        if (string.contains('.')) KorneaResult.successOrEmpty(string.toDoubleOrNull()) else KorneaResult.successOrEmpty(string.toIntOrNullBaseN())
+    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+        when (typeInfo) {
+            KnolusString -> typeInfo.asResult(this)
+            KnolusDouble -> typeInfo.asResultOrEmpty(string.toDoubleOrNull()?.let(::KnolusDouble))
+            KnolusInt -> typeInfo.asResultOrEmpty(string.toIntOrNullBaseN()?.let(::KnolusInt))
+            KnolusChar -> typeInfo.asResultOrEmpty(string.firstOrNull()?.let(::KnolusChar))
+            KnolusNumericalType -> typeInfo.asResultOrEmpty(if (string.contains('.')) string.toDoubleOrNull()?.let(::KnolusDouble) else string.toIntOrNullBaseN()?.let(::KnolusInt))
+            KnolusBoolean -> typeInfo.asResult(KnolusBoolean(string.toFormattedBoolean()))
 
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(string.toFormattedBoolean())
+            else -> KorneaResult.empty()
+        }
 }

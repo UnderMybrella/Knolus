@@ -9,13 +9,21 @@ sealed class KnolusConstants {
         override val typeInfo: KnolusTypedValue.TypeInfo<Null>
             get() = this
 
-        override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = if (context.nullTypeCoercible) KorneaResult.success(0) else KorneaResult.Empty.ofNull()
-        override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = if (context.nullTypeCoercible) KorneaResult.success("[null]") else KorneaResult.Empty.ofNull()
-        override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = if (context.nullTypeCoercible) KorneaResult.success(false) else KorneaResult.Empty.ofNull()
-
         override fun isInstance(instance: Any?): Boolean = instance === Null
         override fun asInstance(instance: Any?): Null = instance as Null
         override fun asInstanceSafe(instance: Any?): Null? = instance as? Null
+
+        override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+            if (!context.nullTypeCoercible) KorneaResult.Empty.ofNull()
+            else {
+                when (typeInfo) {
+                    KnolusString -> typeInfo.asResult(KnolusString("[null]"))
+                    KnolusNumericalType -> typeInfo.asResult(KnolusInt(0))
+                    KnolusBoolean -> typeInfo.asResult(KnolusBoolean(false))
+
+                    else -> KorneaResult.empty()
+                }
+            }
     }
 
     object Undefined : KnolusTypedValue, KnolusTypedValue.TypeInfo<Undefined> {
@@ -23,12 +31,20 @@ sealed class KnolusConstants {
         override val typeInfo: KnolusTypedValue.TypeInfo<Undefined>
             get() = this
 
-        override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = if (context.undefinedTypeCoercible) KorneaResult.success(0) else KorneaResult.Empty.ofUndefined()
-        override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = if (context.undefinedTypeCoercible) KorneaResult.success("[undefined]") else KorneaResult.Empty.ofUndefined()
-        override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = if (context.undefinedTypeCoercible) KorneaResult.success(false) else KorneaResult.Empty.ofUndefined()
-
         override fun isInstance(instance: Any?): Boolean = instance === Undefined
         override fun asInstance(instance: Any?): Undefined = instance as Undefined
         override fun asInstanceSafe(instance: Any?): Undefined? = instance as? Undefined
+
+        override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+            if (!context.undefinedTypeCoercible) KorneaResult.Empty.ofUndefined()
+            else {
+                when (typeInfo) {
+                    KnolusString -> typeInfo.asResult(KnolusString("[null]"))
+                    KnolusNumericalType -> typeInfo.asResult(KnolusInt(0))
+                    KnolusBoolean -> typeInfo.asResult(KnolusBoolean(false))
+
+                    else -> KorneaResult.empty()
+                }
+            }
     }
 }

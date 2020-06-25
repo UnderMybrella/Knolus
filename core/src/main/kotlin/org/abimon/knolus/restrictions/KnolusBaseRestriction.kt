@@ -7,7 +7,7 @@ import org.abimon.kornea.errors.common.KorneaResult
 
 interface KnolusBaseRestriction<T> : KnolusRestriction<T> {
     @Suppress("UNCHECKED_CAST")
-    object Instance: KnolusBaseRestriction<Any?> {
+    object Instance : KnolusBaseRestriction<Any?> {
         inline operator fun <T> invoke(): KnolusBaseRestriction<T> = this as KnolusBaseRestriction<T>
     }
 
@@ -76,6 +76,12 @@ interface KnolusBaseRestriction<T> : KnolusRestriction<T> {
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
+    ): KorneaResult<T> = KorneaResult.empty()
+
+    override fun canAskForCastingOperatorFunction(
+        context: KnolusContext<T>,
+        self: KnolusTypedValue,
+        castingTo: KnolusTypedValue.TypeInfo<*>
     ): KorneaResult<T> = KorneaResult.empty()
 
     override fun createSubroutineRestrictions(

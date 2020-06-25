@@ -14,9 +14,14 @@ interface KnolusNumericalType : KnolusTypedValue {
 
     val number: Number
 
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = KorneaResult.success(number)
-    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(number.toString())
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(number != 0)
+    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+        when (typeInfo) {
+            KnolusNumericalType -> typeInfo.asResult(this)
+            KnolusString -> typeInfo.asResult(KnolusString(number.toString()))
+            KnolusBoolean -> typeInfo.asResult(KnolusBoolean(number != 0))
+
+            else -> KorneaResult.empty()
+        }
 }
 
 inline class KnolusInt(override val number: Int) : KnolusNumericalType {
@@ -60,6 +65,13 @@ inline class KnolusChar(val char: Char) : KnolusNumericalType {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusChar>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = KorneaResult.success(char.toString())
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = KorneaResult.success(char != '\u0000')
+    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+        when (typeInfo) {
+            KnolusString -> typeInfo.asResult(KnolusString(char.toString()))
+            KnolusBoolean -> typeInfo.asResult(KnolusBoolean(char != '\u0000'))
+            KnolusNumericalType -> typeInfo.asResult(this)
+
+            else -> KorneaResult.empty()
+//            else -> KorneaResult.empty()
+        }
 }

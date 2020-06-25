@@ -124,11 +124,8 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
             }.map { evalArray -> of(evalArray.requireNoNulls()) }
         }
 
-        override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = super<KnolusTypedValue.RuntimeValue>.asBoolean(context)
-
-        override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = super<KnolusTypedValue.RuntimeValue>.asNumber(context)
-
-        override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = super<KnolusTypedValue.RuntimeValue>.asString(context)
+//        override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+//            super<KnolusTypedValue.RuntimeValue>.asTypeImpl(context, typeInfo)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -149,27 +146,5 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusArray<*>>
         get() = TypeInfo
 
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> =
-        KorneaResult.success(array.isNotEmpty())
-
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> =
-        KorneaResult.success(array.size)
-
-    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> {
-        val initial = KorneaResult.success(StringBuilder().apply {
-            append("arrayOf(")
-        })
-
-        return array.indices.fold(initial) { acc, i ->
-            acc.flatMap { builder ->
-                if (i > 0) builder.append(", ")
-
-                array[i].asString(context).map(builder::append)
-            }
-        }.map { builder ->
-            builder.append(")")
-
-            builder.toString()
-        }
-    }
+//    override suspend fun <T, R, I : KnolusTypedValue.TypeInfo<R>> asType(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> = KorneaResult.empty()
 }

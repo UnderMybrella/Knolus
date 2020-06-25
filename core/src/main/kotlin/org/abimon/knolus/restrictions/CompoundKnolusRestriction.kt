@@ -111,6 +111,15 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
             acc.switchIfEmpty { r.canAskForOperatorFunction(context, operator, a, b) }
         }.switchIfEmpty(emptyResult)
 
+    override fun canAskForCastingOperatorFunction(
+        context: KnolusContext<R>,
+        self: KnolusTypedValue,
+        castingTo: KnolusTypedValue.TypeInfo<*>
+    ): KorneaResult<R> =
+        restrictions.fold(startingValue()) { acc, r ->
+            acc.switchIfEmpty { r.canAskForCastingOperatorFunction(context, self, castingTo) }
+        }.switchIfEmpty(emptyResult)
+
     override fun createSubroutineRestrictions(
         currentContext: KnolusContext<R>,
         function: KnolusFunction<KnolusTypedValue?, R, *>,

@@ -19,10 +19,6 @@ data class KnolusLazyExpression(
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyExpression>
         get() = TypeInfo
 
-    override suspend fun <T> asString(context: KnolusContext<T>): KorneaResult<String> = evaluate(context).flatMap { it.asString(context) }
-    override suspend fun <T> asNumber(context: KnolusContext<T>): KorneaResult<Number> = evaluate(context).flatMap { it.asNumber(context) }
-    override suspend fun <T> asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = evaluate(context).flatMap { it.asBoolean(context) }
-
     override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> {
         var value: KnolusTypedValue =
             if (this.startValue is KnolusTypedValue.UnsureValue<*> && this.startValue.needsEvaluation(context)) {

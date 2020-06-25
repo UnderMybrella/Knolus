@@ -4,6 +4,8 @@ import org.abimon.kornea.annotations.AvailableSince
 
 @AvailableSince(Knolus.VERSION_1_2_0)
 object Knolus {
+    const val VERSION_1_4_0 = "1.4.0"
+
     /**
      * Adds [KnolusVisitor.visitStringValue] and [KnolusVisitor.visitPlainString]
      * Adds [org.abimon.knolus.transform.TransKnolusVisitor.visitStringValue] and [org.abimon.knolus.transform.TransKnolusVisitor.visitPlainString]
