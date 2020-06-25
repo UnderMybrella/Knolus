@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'maven-publish'
 
 group 'org.abimon'
-version '1.3.0'
+version '1.4.0'
 
 sourceCompatibility = 8
 
