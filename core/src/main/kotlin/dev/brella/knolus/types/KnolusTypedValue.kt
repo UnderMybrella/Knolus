@@ -2,8 +2,8 @@ package dev.brella.knolus.types
 
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.*
-import org.kornea.toolkit.common.KorneaTypeChecker
+import dev.brella.kornea.errors.common.*
+import dev.brella.kornea.toolkit.common.KorneaTypeChecker
 
 interface KnolusTypedValue {
     interface TypeInfo<T> : KorneaTypeChecker<T> {

@@ -6,7 +6,7 @@ import dev.brella.knolus.ParameterSpec
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.getValue
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 fun <T, R, C : KnolusContext<out R>> KnolusFunctionBuilder<T, R, C>.setFunctionWithContext(func: suspend (context: C) -> T): KnolusFunctionBuilder<T, R, C> {
     return setFunction { context: C, _: Map<String, KnolusTypedValue> -> func(context) }

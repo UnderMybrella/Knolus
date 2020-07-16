@@ -3,7 +3,7 @@ package dev.brella.knolus
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusObject
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.errors.common.*
 
 @ExperimentalUnsignedTypes
 sealed class KnolusUnion {

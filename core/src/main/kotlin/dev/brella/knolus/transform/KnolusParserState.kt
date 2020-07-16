@@ -1,6 +1,6 @@
 package dev.brella.knolus.transform
 
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 import org.antlr.v4.runtime.BufferedTokenStream
 import org.antlr.v4.runtime.Lexer
 import org.antlr.v4.runtime.Parser

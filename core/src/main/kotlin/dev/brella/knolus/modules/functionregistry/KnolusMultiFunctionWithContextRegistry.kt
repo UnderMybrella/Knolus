@@ -3,7 +3,7 @@ package dev.brella.knolus.modules.functionregistry
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiFunctionWithContext(
     functionName: String,

@@ -1,8 +1,8 @@
 package dev.brella.knolus.types
 
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.flatMap
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.flatMap
 
 data class KnolusPropertyReference(val variableName: String, val propertyName: String) : KnolusTypedValue.RuntimeValue<KnolusTypedValue> {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference> {

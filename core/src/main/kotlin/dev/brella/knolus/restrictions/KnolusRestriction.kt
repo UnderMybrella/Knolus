@@ -3,10 +3,10 @@ package dev.brella.knolus.restrictions
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.annotations.AvailableSince
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.StaticSuccess
-import org.abimon.kornea.errors.common.success
+import dev.brella.kornea.annotations.AvailableSince
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.StaticSuccess
+import dev.brella.kornea.errors.common.success
 
 @ExperimentalUnsignedTypes
 interface KnolusRestriction<T> {

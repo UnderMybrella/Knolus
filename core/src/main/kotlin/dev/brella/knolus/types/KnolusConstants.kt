@@ -1,7 +1,7 @@
 package dev.brella.knolus.types
 
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 sealed class KnolusConstants {
     object Null : KnolusTypedValue, KnolusTypedValue.TypeInfo<Null> {

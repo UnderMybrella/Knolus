@@ -5,8 +5,8 @@ import dev.brella.knolus.buildFunctionCallAsVar
 import dev.brella.knolus.buildFunctionCallAsVarResult
 import dev.brella.knolus.transform.*
 import dev.brella.knolus.types.*
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.map
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.map
 
 
 @ExperimentalUnsignedTypes

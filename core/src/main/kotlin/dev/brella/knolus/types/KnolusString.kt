@@ -3,7 +3,7 @@ package dev.brella.knolus.types
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.toFormattedBoolean
 import dev.brella.knolus.toIntOrNullBaseN
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 inline class KnolusString(val string: String) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusString> {

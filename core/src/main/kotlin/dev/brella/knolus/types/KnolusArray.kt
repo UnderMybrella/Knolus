@@ -1,7 +1,7 @@
 package dev.brella.knolus.types
 
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.errors.common.*
 
 sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : KnolusTypedValue {
     companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusArray<*>> {

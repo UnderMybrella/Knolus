@@ -2,7 +2,7 @@ package dev.brella.knolus.types
 
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.errors.common.*
 
 data class KnolusLazyExpression(
     val startValue: KnolusTypedValue,

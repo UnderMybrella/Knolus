@@ -4,10 +4,10 @@ package dev.brella.knolus
 
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.*
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.flatMap
-import org.abimon.kornea.errors.common.map
-import org.abimon.kornea.errors.common.successInline
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.flatMap
+import dev.brella.kornea.errors.common.map
+import dev.brella.kornea.errors.common.successInline
 import kotlin.math.floor
 import kotlin.math.log
 import kotlin.math.roundToInt

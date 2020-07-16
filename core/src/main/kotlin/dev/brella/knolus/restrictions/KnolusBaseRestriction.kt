@@ -3,7 +3,7 @@ package dev.brella.knolus.restrictions
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 interface KnolusBaseRestriction<T> : KnolusRestriction<T> {
     @Suppress("UNCHECKED_CAST")

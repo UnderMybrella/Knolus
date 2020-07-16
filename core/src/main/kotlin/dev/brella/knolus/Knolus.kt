@@ -1,6 +1,6 @@
 package dev.brella.knolus
 
-import org.abimon.kornea.annotations.AvailableSince
+import dev.brella.kornea.annotations.AvailableSince
 
 @AvailableSince(Knolus.VERSION_1_2_0)
 object Knolus {

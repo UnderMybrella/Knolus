@@ -3,7 +3,7 @@ package dev.brella.knolus
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusObject
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 sealed class KnolusDeclaredFunctionParameter<T : KnolusTypedValue> {
     abstract val name: String

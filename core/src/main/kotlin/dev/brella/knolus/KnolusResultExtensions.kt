@@ -1,8 +1,8 @@
 package dev.brella.knolus
 
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.successInline
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.successInline
 
 inline fun <T> KorneaResult.Companion.foldingMutableListOf(list: MutableList<T> = ArrayList()): KorneaResult<MutableList<T>> = success(list)
 

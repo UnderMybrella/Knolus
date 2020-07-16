@@ -3,7 +3,7 @@ package dev.brella.knolus.modules.functionregistry
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 fun <T, R, C : KnolusContext<out R>, P0> KnolusFunctionBuilder<T, R, C>.setMemberFunction(typeSpec: ParameterSpec<*, P0, in R, C>, func: suspend (self: P0) -> T): KnolusFunctionBuilder<T, R, C> {
     addParameter(typeSpec)

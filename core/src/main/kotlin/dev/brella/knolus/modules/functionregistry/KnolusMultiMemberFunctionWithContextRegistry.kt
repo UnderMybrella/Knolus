@@ -3,7 +3,7 @@ package dev.brella.knolus.modules.functionregistry
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.ParameterSpec
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 fun <R, C: KnolusContext<out R>, P0, P1> KnolusContext<R>.registerMultiMemberFunctionWithContext(
     typeSpec: ParameterSpec<*, P0, in R, C>,

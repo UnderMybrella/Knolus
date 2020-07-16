@@ -4,9 +4,9 @@ import org.abimon.antlr.knolus.KnolusParser
 import dev.brella.knolus.ExpressionOperator
 import dev.brella.knolus.KnolusUnion
 import dev.brella.knolus.types.*
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.StaticSuccess
-import org.abimon.kornea.errors.common.success
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.StaticSuccess
+import dev.brella.kornea.errors.common.success
 
 interface KnolusVisitorRestrictions<T> {
     interface Permissive<T> : KnolusVisitorRestrictions<T> {

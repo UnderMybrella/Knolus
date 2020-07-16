@@ -4,9 +4,9 @@ import org.abimon.antlr.knolus.KnolusParser
 import dev.brella.knolus.Knolus
 import dev.brella.knolus.KnolusUnion
 import dev.brella.knolus.types.*
-import org.abimon.kornea.annotations.AvailableSince
-import org.abimon.kornea.annotations.ChangedSince
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.annotations.AvailableSince
+import dev.brella.kornea.annotations.ChangedSince
+import dev.brella.kornea.errors.common.KorneaResult
 import org.antlr.v4.runtime.tree.ParseTreeVisitor
 
 @AvailableSince(Knolus.VERSION_1_2_0)

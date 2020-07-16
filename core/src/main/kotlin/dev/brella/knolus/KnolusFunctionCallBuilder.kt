@@ -2,7 +2,7 @@ package dev.brella.knolus
 
 import dev.brella.knolus.types.KnolusLazyFunctionCall
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.KorneaResult
 
 @ExperimentalUnsignedTypes
 class KnolusFunctionCallBuilder(val functionName: String) {

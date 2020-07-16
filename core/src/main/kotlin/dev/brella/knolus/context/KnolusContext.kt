@@ -7,8 +7,8 @@ import dev.brella.knolus.restrictions.KnolusRestriction
 import dev.brella.knolus.restrictions.canAskAsParentForFunction
 import dev.brella.knolus.restrictions.canAskAsParentForVariable
 import dev.brella.knolus.types.*
-import org.abimon.kornea.errors.common.*
-import org.kornea.toolkit.common.filterToInstance
+import dev.brella.kornea.errors.common.*
+import dev.brella.kornea.toolkit.common.filterToInstance
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 

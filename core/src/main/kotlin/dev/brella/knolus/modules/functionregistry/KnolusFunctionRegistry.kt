@@ -5,8 +5,8 @@ package dev.brella.knolus.modules.functionregistry
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.annotations.AvailableSince
-import org.abimon.kornea.errors.common.KorneaResult
+import dev.brella.kornea.annotations.AvailableSince
+import dev.brella.kornea.errors.common.KorneaResult
 
 //<T(.*?)> KnolusFunctionBuilder<(T\??)>
 //<T, R$1> KnolusFunctionBuilder<$2, R>

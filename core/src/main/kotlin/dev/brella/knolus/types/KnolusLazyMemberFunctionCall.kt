@@ -2,10 +2,10 @@ package dev.brella.knolus.types
 
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.flatMap
-import org.abimon.kornea.errors.common.map
-import org.abimon.kornea.errors.common.switchIfEmpty
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.flatMap
+import dev.brella.kornea.errors.common.map
+import dev.brella.kornea.errors.common.switchIfEmpty
 
 @ExperimentalUnsignedTypes
 data class KnolusLazyMemberFunctionCall(

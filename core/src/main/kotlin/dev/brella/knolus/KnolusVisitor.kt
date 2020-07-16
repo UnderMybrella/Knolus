@@ -10,14 +10,14 @@ import dev.brella.knolus.restrictions.KnolusVisitorRestrictions
 import dev.brella.knolus.transform.KnolusTokenBlueprint
 import dev.brella.knolus.transform.TransKnolusVisitor
 import dev.brella.knolus.types.*
-import org.abimon.kornea.annotations.ChangedSince
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.annotations.ChangedSince
+import dev.brella.kornea.errors.common.*
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.kornea.toolkit.common.switchIfNull
+import dev.brella.kornea.toolkit.common.switchIfNull
 
 @ExperimentalUnsignedTypes
 @ChangedSince(Knolus.VERSION_1_3_0)

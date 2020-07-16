@@ -3,7 +3,7 @@ package dev.brella.knolus.restrictions
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.errors.common.*
 
 @ExperimentalUnsignedTypes
 class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>, val startingValue: () -> KorneaResult<R>, val emptyResult: (empty: KorneaResult.Empty) -> KorneaResult<R>) : KnolusRestriction<R> {

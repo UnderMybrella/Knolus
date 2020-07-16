@@ -2,9 +2,9 @@ package dev.brella.knolus.types
 
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusContext
-import org.abimon.kornea.errors.common.KorneaResult
-import org.abimon.kornea.errors.common.flatMap
-import org.abimon.kornea.errors.common.map
+import dev.brella.kornea.errors.common.KorneaResult
+import dev.brella.kornea.errors.common.flatMap
+import dev.brella.kornea.errors.common.map
 
 inline class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>) :
     KnolusTypedValue.RuntimeValue<KnolusString> {

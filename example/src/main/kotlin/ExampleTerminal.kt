@@ -13,7 +13,7 @@ import dev.brella.knolus.types.KnolusInt
 import dev.brella.knolus.types.KnolusString
 import dev.brella.knolus.types.KnolusTypedValue
 import dev.brella.knolus.types.asNumber
-import org.abimon.kornea.errors.common.*
+import dev.brella.kornea.errors.common.*
 import org.antlr.v4.runtime.CommonTokenStream
 
 @ExperimentalUnsignedTypes

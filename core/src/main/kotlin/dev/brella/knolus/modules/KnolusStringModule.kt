@@ -6,7 +6,7 @@ import dev.brella.knolus.modules.functionregistry.*
 import dev.brella.knolus.types.KnolusBoolean
 import dev.brella.knolus.types.KnolusInt
 import dev.brella.knolus.types.KnolusString
-import org.abimon.kornea.errors.common.getOrElse
+import dev.brella.kornea.errors.common.getOrElse
 import kotlin.math.log
 
 object KnolusStringModule {

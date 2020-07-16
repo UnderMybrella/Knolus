@@ -4,7 +4,7 @@ package dev.brella.knolus.transform
 
 import dev.brella.knolus.ExpressionOperator
 import dev.brella.knolus.Knolus
-import org.abimon.kornea.annotations.AvailableSince
+import dev.brella.kornea.annotations.AvailableSince
 import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
