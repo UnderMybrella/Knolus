@@ -12,6 +12,7 @@ import org.abimon.knolus.transform.*
 import org.abimon.knolus.types.KnolusInt
 import org.abimon.knolus.types.KnolusString
 import org.abimon.knolus.types.KnolusTypedValue
+import org.abimon.knolus.types.asNumber
 import org.abimon.kornea.errors.common.*
 import org.antlr.v4.runtime.CommonTokenStream
 
