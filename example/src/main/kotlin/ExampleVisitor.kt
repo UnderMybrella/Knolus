@@ -1,10 +1,10 @@
 import org.abimon.antlr.knolus.ExampleParser
 import org.abimon.antlr.knolus.ExampleParserBaseVisitor
-import org.abimon.knolus.KnolusUnion
-import org.abimon.knolus.buildFunctionCallAsVar
-import org.abimon.knolus.buildFunctionCallAsVarResult
-import org.abimon.knolus.transform.*
-import org.abimon.knolus.types.*
+import dev.brella.knolus.KnolusUnion
+import dev.brella.knolus.buildFunctionCallAsVar
+import dev.brella.knolus.buildFunctionCallAsVarResult
+import dev.brella.knolus.transform.*
+import dev.brella.knolus.types.*
 import org.abimon.kornea.errors.common.KorneaResult
 import org.abimon.kornea.errors.common.map
 

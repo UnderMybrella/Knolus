@@ -6,8 +6,8 @@ plugins {
 
 apply plugin: 'maven-publish'
 
-group 'org.abimon'
-version '1.4.0'
+group 'dev.brella'
+version '1.4.1'
 
 sourceCompatibility = 8
 
@@ -81,8 +81,8 @@ compileTestKotlin {
 }
 
 generateGrammarSource {
-    arguments += ['-visitor', '-package', 'org.abimon.antlr.knolus']
-    outputDirectory = file("$buildDir/generated-src/antlr/main/org/abimon/antlr/knolus")
+    arguments += ['-visitor', '-package', 'dev.brella.antlr.knolus']
+    outputDirectory = file("$buildDir/generated-src/antlr/main/dev/brella/antlr/knolus")
 }
 
 tasks.compileKotlin.dependsOn(generateGrammarSource)
