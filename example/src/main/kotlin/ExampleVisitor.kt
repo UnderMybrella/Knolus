@@ -1,5 +1,5 @@
-import org.abimon.antlr.knolus.ExampleParser
-import org.abimon.antlr.knolus.ExampleParserBaseVisitor
+import dev.brella.antlr.knolus.ExampleParser
+import dev.brella.antlr.knolus.ExampleParserBaseVisitor
 import dev.brella.knolus.KnolusUnion
 import dev.brella.knolus.buildFunctionCallAsVar
 import dev.brella.knolus.buildFunctionCallAsVarResult

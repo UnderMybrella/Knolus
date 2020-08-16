@@ -20,18 +20,18 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
 
     constructor(restrictions: Array<KnolusRestriction<R>>, emptyResult: (empty: KorneaResult.Empty) -> KorneaResult<R>) : this(restrictions.toList(), KorneaResult.Companion::empty, emptyResult)
 
-    override fun canGetVariable(context: KnolusContext<R>, variableName: String): KorneaResult<R> =
+    override fun canGetVariable(context: KnolusContext, variableName: String): KorneaResult<R> =
         restrictions.fold(startingValue()) { acc, r ->
             acc.switchIfEmpty { r.canGetVariable(context, variableName) }
         }.switchIfEmpty(emptyResult)
 
-    override fun canAskParentForVariable(child: KnolusContext<R>, parent: KnolusContext<R>, variableName: String): KorneaResult<R> =
+    override fun canAskParentForVariable(child: KnolusContext, parent: KnolusContext, variableName: String): KorneaResult<R> =
         restrictions.fold(startingValue()) { acc, r ->
             acc.switchIfEmpty { r.canAskParentForVariable(child, parent, variableName) }
         }.switchIfEmpty(emptyResult)
 
     override fun canSetVariable(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         variableName: String,
         variableValue: KnolusTypedValue,
         attemptedParentalSet: KorneaResult<KnolusTypedValue?>?,
@@ -40,16 +40,16 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
     }.switchIfEmpty(emptyResult)
 
     override fun <T> canRegisterFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         functionName: String,
-        function: KnolusFunction<T, R, *>,
-        attemptedParentalRegister: KorneaResult<KnolusFunction<T, R, *>>?,
+        function: KnolusFunction<T>,
+        attemptedParentalRegister: KorneaResult<KnolusFunction<T>>?,
     ): KorneaResult<R> = restrictions.fold(startingValue()) { acc, r ->
         acc.switchIfEmpty { r.canRegisterFunction(context, functionName, function, attemptedParentalRegister) }
     }.switchIfEmpty(emptyResult)
 
     override fun canAskForFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KorneaResult<R> =
@@ -58,8 +58,8 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
         }.switchIfEmpty(emptyResult)
 
     override fun canAskParentForFunction(
-        child: KnolusContext<R>,
-        parent: KnolusContext<R>,
+        child: KnolusContext,
+        parent: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KorneaResult<R> = restrictions.fold(startingValue()) { acc, r ->
@@ -67,24 +67,24 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
     }.switchIfEmpty(emptyResult)
 
     override fun canTryFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-        function: KnolusFunction<KnolusTypedValue?, R, *>,
+        function: KnolusFunction<KnolusTypedValue?>,
     ): KorneaResult<R> = restrictions.fold(startingValue()) { acc, r ->
         acc.switchIfEmpty { r.canTryFunction(context, functionName, functionParameters, function) }
     }.switchIfEmpty(emptyResult)
 
     override fun canRunFunction(
-        context: KnolusContext<R>,
-        function: KnolusFunction<KnolusTypedValue?, R, *>,
+        context: KnolusContext,
+        function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KorneaResult<R> = restrictions.fold(startingValue()) { acc, r ->
         acc.switchIfEmpty { r.canRunFunction(context, function, parameters) }
     }.switchIfEmpty(emptyResult)
 
     override fun canAskForMemberFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         member: KnolusTypedValue,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
@@ -93,7 +93,7 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
     }.switchIfEmpty(emptyResult)
 
     override fun canAskForMemberPropertyGetter(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         member: KnolusTypedValue,
         propertyName: String,
     ): KorneaResult<R> =
@@ -102,7 +102,7 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
         }.switchIfEmpty(emptyResult)
 
     override fun canAskForOperatorFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
@@ -112,7 +112,7 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
         }.switchIfEmpty(emptyResult)
 
     override fun canAskForCastingOperatorFunction(
-        context: KnolusContext<R>,
+        context: KnolusContext,
         self: KnolusTypedValue,
         castingTo: KnolusTypedValue.TypeInfo<*>
     ): KorneaResult<R> =
@@ -121,8 +121,8 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
         }.switchIfEmpty(emptyResult)
 
     override fun createSubroutineRestrictions(
-        currentContext: KnolusContext<R>,
-        function: KnolusFunction<KnolusTypedValue?, R, *>,
+        currentContext: KnolusContext,
+        function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KorneaResult<KnolusRestriction<R>> =
         restrictions.fold(KorneaResult.success(mutableListOf<KnolusRestriction<R>>())) { acc, r ->

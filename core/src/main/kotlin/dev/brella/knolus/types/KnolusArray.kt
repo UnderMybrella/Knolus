@@ -21,7 +21,7 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
         fun <T : KnolusTypedValue> ofStable(array: Array<T>): KnolusArray<T> = StableArray(array)
         fun <T : KnolusTypedValue.UnsureValue<*>> ofUnsure(array: Array<T>): KnolusArray<T> = UnsureArray(array)
 
-        suspend fun <T> KnolusArray<*>.evaluateOrSelf(context: KnolusContext<T>): KorneaResult<KnolusArray<*>> =
+        suspend fun <T> KnolusArray<*>.evaluateOrSelf(context: KnolusContext): KorneaResult<KnolusArray<*>> =
             when (this) {
                 is RuntimeArray<*> -> evaluate(context)
                 is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.successInline(this)
@@ -56,10 +56,10 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
 
     private data class UnsureArray<T : KnolusTypedValue>(override val array: Array<T>) :
         KnolusArray<T>(array), KnolusTypedValue.UnsureValue<KnolusArray<KnolusTypedValue>> {
-        override suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean =
+        override suspend fun needsEvaluation(context: KnolusContext): Boolean =
             array.any { t -> t is KnolusTypedValue.UnsureValue<*> && t.needsEvaluation(context) }
 
-        override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusArray<KnolusTypedValue>> {
+        override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusArray<KnolusTypedValue>> {
             val initial: KorneaResult<Array<KnolusTypedValue?>> = KorneaResult.success(arrayOfNulls(array.size))
 
             return array.indices.fold(initial) { acc, i ->
@@ -102,7 +102,7 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
 
     private data class RuntimeArray<T : KnolusTypedValue>(override val array: Array<T>) : KnolusArray<T>(array),
         KnolusTypedValue.RuntimeValue<KnolusArray<KnolusTypedValue>> {
-        override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusArray<KnolusTypedValue>> {
+        override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusArray<KnolusTypedValue>> {
             val initial: KorneaResult<Array<KnolusTypedValue?>> = KorneaResult.success(arrayOfNulls(array.size))
 
             return array.indices.fold(initial) { acc, i ->

@@ -8,7 +8,7 @@ import dev.brella.kornea.errors.common.*
 @ExperimentalUnsignedTypes
 sealed class KnolusUnion {
     interface Action<T> {
-        suspend fun <R> run(context: KnolusContext<R>): KorneaResult<T>
+        suspend fun run(context: KnolusContext): KorneaResult<T>
     }
 
     abstract class UnionAction<T>: KnolusUnion(), Action<T>
@@ -102,7 +102,7 @@ sealed class KnolusUnion {
         private val initialVariableValue: KnolusTypedValue,
         val global: Boolean = false,
     ) : KnolusUnion(), Action<KnolusTypedValue?> {
-        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusTypedValue?> {
+        override suspend fun run(context: KnolusContext): KorneaResult<KnolusTypedValue?> {
             if (initialVariableValue is KnolusTypedValue.UnsureValue<*> && initialVariableValue.needsEvaluation(context)) {
                 val evaluated = initialVariableValue.evaluate(context).getOrBreak { error ->
                     return KorneaResult.errorAsIllegalState(
@@ -113,7 +113,7 @@ sealed class KnolusUnion {
                 }
 
                 val result = context.set(variableName, global, evaluated)
-                if (result is KorneaResult.Success)
+                if (result is KorneaResult.Success<*>)
                     return KorneaResult.successInline(evaluated)
 
                 return KorneaResult.errorAsIllegalState(
@@ -123,7 +123,7 @@ sealed class KnolusUnion {
                 )
             } else {
                 val result = context.set(variableName, global, initialVariableValue)
-                if (result is KorneaResult.Success)
+                if (result is KorneaResult.Success<*>)
                     return KorneaResult.successInline(initialVariableValue)
 
                 return KorneaResult.errorAsIllegalState(
@@ -140,7 +140,7 @@ sealed class KnolusUnion {
         private val initialVariableValue: KnolusTypedValue,
         val global: Boolean = false,
     ) : KnolusUnion(), Action<KnolusTypedValue?> {
-        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusTypedValue?> =
+        override suspend fun run(context: KnolusContext): KorneaResult<KnolusTypedValue?> =
             context.containsWithResult(variableName)
                 .flatMap {
                     if (initialVariableValue is KnolusTypedValue.UnsureValue<*> && initialVariableValue.needsEvaluation(context)) {
@@ -180,16 +180,16 @@ sealed class KnolusUnion {
         val parameterNames: Array<String>,
         val global: Boolean = false,
         val body: ScopeType?,
-    ) : KnolusUnion(), Action<KnolusFunction<KnolusTypedValue?, *, *>> {
+    ) : KnolusUnion(), Action<KnolusFunction<KnolusTypedValue?>> {
         //TODO: Make sure this is actually invoked after restrictions are checked
-        suspend operator fun <R> invoke(
-            context: KnolusContext<out R>,
+        suspend operator fun invoke(
+            context: KnolusContext,
             parameters: Map<String, KnolusTypedValue>,
         ): KnolusTypedValue? = (body?.runDirect(context, parameters) as? ScopeResult.Returned<*>)?.value
 
-        override suspend fun <R> run(context: KnolusContext<R>): KorneaResult<KnolusFunction<KnolusTypedValue?, R, *>> =
+        override suspend fun run(context: KnolusContext): KorneaResult<KnolusFunction<KnolusTypedValue?>> =
             context.register(
-                functionName, KnolusFunction<KnolusTypedValue?, R, KnolusContext<out R>>(
+                functionName, KnolusFunction<KnolusTypedValue?>(
                     Array(parameterNames.size) {
                         KnolusDeclaredFunctionParameter.Concrete(
                             parameterNames[it],

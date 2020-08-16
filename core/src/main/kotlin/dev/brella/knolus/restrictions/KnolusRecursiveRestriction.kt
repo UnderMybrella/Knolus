@@ -19,8 +19,8 @@ data class KnolusRecursiveRestriction<T>(val maxDepth: Int = 0xFF, val maxRecurs
 
     @ExperimentalUnsignedTypes
     override fun canRunFunction(
-        context: KnolusContext<T>,
-        function: KnolusFunction<KnolusTypedValue?, T, *>,
+        context: KnolusContext,
+        function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>
     ): KorneaResult<T> {
         if (context.depth >= maxDepth) {

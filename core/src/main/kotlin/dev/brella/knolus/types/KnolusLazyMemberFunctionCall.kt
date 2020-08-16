@@ -24,10 +24,10 @@ data class KnolusLazyMemberFunctionCall(
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyMemberFunctionCall>
         get() = TypeInfo
 
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
+    override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusTypedValue> =
         run(context)
 
-    override suspend fun <T> run(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
+    override suspend fun run(context: KnolusContext): KorneaResult<KnolusTypedValue> =
         context[variableName].switchIfEmpty { empty ->
             KorneaResult.errorAsIllegalState(KnolusContext.UNDECLARED_VARIABLE, "No such variable by name of $variableName", empty)
         }.flatMap { member ->

@@ -1,8 +1,8 @@
 package dev.brella.knolus
 
-import org.abimon.antlr.knolus.KnolusLexer
-import org.abimon.antlr.knolus.KnolusParser
-import org.abimon.antlr.knolus.KnolusParserBaseVisitor
+import dev.brella.antlr.knolus.KnolusLexer
+import dev.brella.antlr.knolus.KnolusParser
+import dev.brella.antlr.knolus.KnolusParserBaseVisitor
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.context.KnolusScopeContext
 import dev.brella.knolus.restrictions.KnolusRestriction
@@ -585,23 +585,23 @@ sealed class ScopeResult {
 
 @ExperimentalUnsignedTypes
 suspend fun <R> KnolusUnion.ScopeType.run(
-    parentContext: KnolusContext<R>,
+    parentContext: KnolusContext,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext<R>.() -> Unit = {},
+    init: KnolusContext.() -> Unit = {},
 ) = run(parentContext.restrictions, parentContext, parameters, init)
 
 suspend fun <R> KnolusUnion.ScopeType.run(
     restrictions: KnolusRestriction<R>,
-    parentContext: KnolusContext<R>? = null,
+    parentContext: KnolusContext? = null,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext<R>.() -> Unit = {},
+    init: KnolusContext.() -> Unit = {},
 ) = runDirect(KnolusScopeContext(this, parentContext, restrictions), parameters, init)
 
 @ExperimentalUnsignedTypes
-suspend fun <R> KnolusUnion.ScopeType.runDirect(
-    knolusContext: KnolusContext<R>,
+suspend fun KnolusUnion.ScopeType.runDirect(
+    knolusContext: KnolusContext,
     parameters: Map<String, Any?> = emptyMap(),
-    init: KnolusContext<R>.() -> Unit = {},
+    init: KnolusContext.() -> Unit = {},
 ): KorneaResult<ScopeResult> {
     parameters.forEach { (k, v) -> knolusContext[k] = v as? KnolusTypedValue ?: return@forEach }
 

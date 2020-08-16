@@ -13,7 +13,7 @@ sealed class KnolusConstants {
         override fun asInstance(instance: Any?): Null = instance as Null
         override fun asInstanceSafe(instance: Any?): Null? = instance as? Null
 
-        override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+        override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
             if (!context.nullTypeCoercible) KorneaResult.Empty.ofNull()
             else {
                 when (typeInfo) {
@@ -35,7 +35,7 @@ sealed class KnolusConstants {
         override fun asInstance(instance: Any?): Undefined = instance as Undefined
         override fun asInstanceSafe(instance: Any?): Undefined? = instance as? Undefined
 
-        override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+        override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
             if (!context.undefinedTypeCoercible) KorneaResult.Empty.ofUndefined()
             else {
                 when (typeInfo) {

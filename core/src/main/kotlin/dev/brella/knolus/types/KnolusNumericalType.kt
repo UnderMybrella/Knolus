@@ -14,7 +14,7 @@ interface KnolusNumericalType : KnolusTypedValue {
 
     val number: Number
 
-    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+    override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
         when (typeInfo) {
             KnolusNumericalType -> typeInfo.asResult(this)
             KnolusString -> typeInfo.asResult(KnolusString(number.toString()))
@@ -65,7 +65,7 @@ inline class KnolusChar(val char: Char) : KnolusNumericalType {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusChar>
         get() = TypeInfo
 
-    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+    override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
         when (typeInfo) {
             KnolusString -> typeInfo.asResult(KnolusString(char.toString()))
             KnolusBoolean -> typeInfo.asResult(KnolusBoolean(char != '\u0000'))

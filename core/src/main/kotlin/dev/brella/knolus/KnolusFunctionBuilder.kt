@@ -57,21 +57,21 @@ fun KnolusUnion.FunctionParameterType.matches(decl: KnolusDeclaredFunctionParame
 fun KnolusUnion.FunctionParameterType.fits(decl: KnolusDeclaredFunctionParameter<*>): Boolean = decl.fits(this)
 
 @ExperimentalUnsignedTypes
-class KnolusFunction<out T, R, in C: KnolusContext<out R>>(
+class KnolusFunction<out T>(
     val parameters: Array<KnolusDeclaredFunctionParameter<*>>,
     val variadicSupported: Boolean = false,
-    val func: suspend (context: C, parameters: Map<String, KnolusTypedValue>) -> T,
+    val func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T,
 ) {
-    suspend fun suspendInvoke(context: C, parameters: Map<String, KnolusTypedValue>) =
+    suspend fun suspendInvoke(context: KnolusContext, parameters: Map<String, KnolusTypedValue>) =
         func(context, parameters)
 }
 
-class KnolusFunctionBuilder<T, R, C: KnolusContext<out R>> {
+class KnolusFunctionBuilder<T> {
     var defaultMissingPolicy: KnolusFunctionParameterMissingPolicy = KnolusFunctionParameterMissingPolicy.Mandatory
     val parameters: MutableList<KnolusDeclaredFunctionParameter<*>> =
         ArrayList()
     var variadicSupported = false
-    lateinit var func: suspend (context: C, parameters: Map<String, KnolusTypedValue>) -> T
+    lateinit var func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T
 
     fun addMandatoryParameter(name: String) = addParameter(name, KnolusFunctionParameterMissingPolicy.Mandatory)
     fun addOptionalParameter(name: String) = addParameter(name, KnolusFunctionParameterMissingPolicy.Optional)
@@ -81,7 +81,7 @@ class KnolusFunctionBuilder<T, R, C: KnolusContext<out R>> {
     fun addParameter(
         name: String,
         missingPolicy: KnolusFunctionParameterMissingPolicy? = null,
-    ): KnolusFunctionBuilder<T, R, C> {
+    ): KnolusFunctionBuilder<T> {
         parameters.add(KnolusDeclaredFunctionParameter.Concrete(
             name.sanitiseFunctionIdentifier(),
             KnolusObject,
@@ -91,19 +91,19 @@ class KnolusFunctionBuilder<T, R, C: KnolusContext<out R>> {
         return this
     }
 
-    fun addMandatoryParameter(spec: ParameterSpec<*, *, in R, C>) =
+    fun addMandatoryParameter(spec: ParameterSpec<*, *>) =
         addParameter(spec, KnolusFunctionParameterMissingPolicy.Mandatory)
 
-    fun addOptionalParameter(spec: ParameterSpec<*, *, in R, C>) =
+    fun addOptionalParameter(spec: ParameterSpec<*, *>) =
         addParameter(spec, KnolusFunctionParameterMissingPolicy.Optional)
 
-    fun <T : KnolusTypedValue> addSubstitutedParameter(spec: ParameterSpec<T, *, in R, C>, default: T) =
+    fun <T : KnolusTypedValue> addSubstitutedParameter(spec: ParameterSpec<T, *>, default: T) =
         addParameter(spec, KnolusFunctionParameterMissingPolicy.Substitute(default))
 
     fun addParameter(
-        spec: ParameterSpec<*, *, *, *>,
+        spec: ParameterSpec<*, *>,
         missingPolicy: KnolusFunctionParameterMissingPolicy? = null,
-    ): KnolusFunctionBuilder<T, R, C> {
+    ): KnolusFunctionBuilder<T> {
         parameters.add(KnolusDeclaredFunctionParameter.Concrete(
             spec.name.sanitiseFunctionIdentifier(),
             spec.type,
@@ -118,7 +118,7 @@ class KnolusFunctionBuilder<T, R, C: KnolusContext<out R>> {
 //        KnolusBoolean(default)
 //    )
 
-    fun setFunction(func: suspend (context: C, parameters: Map<String, KnolusTypedValue>) -> T): KnolusFunctionBuilder<T, R, C> {
+    fun setFunction(func: suspend (context: KnolusContext, parameters: Map<String, KnolusTypedValue>) -> T): KnolusFunctionBuilder<T> {
         this.func = func
 
         return this
@@ -136,15 +136,15 @@ class KnolusFunctionBuilder<T, R, C: KnolusContext<out R>> {
 /** Member Functions */
 
 
-fun <R, C: KnolusContext<out R>, T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T, R, C>.setOperatorFunction(
-    typeSpec: ParameterSpec<V0, P0, in R, C>,
-    parameterSpec: ParameterSpec<V1, P1, in R, C>,
+fun <T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T>.setOperatorFunction(
+    typeSpec: ParameterSpec<V0, P0>,
+    parameterSpec: ParameterSpec<V1, P1>,
     func: suspend (a: P0, b: P1) -> T,
-): KnolusFunctionBuilder<T, R, C> {
+): KnolusFunctionBuilder<T> {
     addParameter(typeSpec.withName("a"))
     addParameter(parameterSpec.withName("b"))
 
-    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val a = typeSpec.transform(parameters.getValue("A") as V0, context).get()
         val b = parameterSpec.transform(parameters.getValue("B") as V1, context).get()
 
@@ -152,15 +152,15 @@ fun <R, C: KnolusContext<out R>, T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedV
     }
 }
 
-fun <T, R, C: KnolusContext<out R>, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T, R, C>.setOperatorResultFunction(
-    typeSpec: ParameterSpec<V0, P0, in R, C>,
-    parameterSpec: ParameterSpec<V1, P1, in R, C>,
+fun <T, V0 : KnolusTypedValue, P0, V1 : KnolusTypedValue, P1> KnolusFunctionBuilder<T>.setOperatorResultFunction(
+    typeSpec: ParameterSpec<V0, P0>,
+    parameterSpec: ParameterSpec<V1, P1>,
     func: suspend (a: KorneaResult<P0>, b: KorneaResult<P1>) -> T,
-): KnolusFunctionBuilder<T, R, C> {
+): KnolusFunctionBuilder<T> {
     addParameter(typeSpec.withName("a"))
     addParameter(parameterSpec.withName("b"))
 
-    return setFunction { context: C, parameters: Map<String, KnolusTypedValue> ->
+    return setFunction { context: KnolusContext, parameters: Map<String, KnolusTypedValue> ->
         val a = typeSpec.transform(parameters.getValue("A") as V0, context)
         val b = parameterSpec.transform(parameters.getValue("B") as V1, context)
 

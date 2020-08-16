@@ -20,11 +20,11 @@ inline class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>
         get() = TypeInfo
 
     @ExperimentalUnsignedTypes
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusString> =
+    override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusString> =
         evaluateLazyString(components, context)
 }
 
-suspend fun <T> evaluateLazyString(components: Array<KnolusUnion.StringComponent>, context: KnolusContext<T>): KorneaResult<KnolusString> =
+suspend fun evaluateLazyString(components: Array<KnolusUnion.StringComponent>, context: KnolusContext): KorneaResult<KnolusString> =
     components.fold(KorneaResult.foldingMutableListOf<String>()) { acc, component ->
         acc.flatMap { list ->
             when (component) {

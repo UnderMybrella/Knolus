@@ -19,5 +19,5 @@ data class KnolusVariableReference(val variableName: String) : KnolusTypedValue.
         get() = TypeInfo
 
     @ExperimentalUnsignedTypes
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> = context[variableName]
+    override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusTypedValue> = context[variableName]
 }

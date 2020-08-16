@@ -14,59 +14,59 @@ interface KnolusRestriction<T> {
         val SUCCESS: KorneaResult<StaticSuccess> = KorneaResult.success()
     }
 
-    fun canGetVariable(context: KnolusContext<T>, variableName: String): KorneaResult<T>
-    fun canAskParentForVariable(child: KnolusContext<T>, parent: KnolusContext<T>, variableName: String): KorneaResult<T>
+    fun canGetVariable(context: KnolusContext, variableName: String): KorneaResult<T>
+    fun canAskParentForVariable(child: KnolusContext, parent: KnolusContext, variableName: String): KorneaResult<T>
 
     fun canSetVariable(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         variableName: String,
         variableValue: KnolusTypedValue,
         attemptedParentalSet: KorneaResult<KnolusTypedValue?>?,
     ): KorneaResult<T>
 
     fun <FT> canRegisterFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         functionName: String,
-        function: KnolusFunction<FT, T, *>,
-        attemptedParentalRegister: KorneaResult<KnolusFunction<FT, T, *>>?,
+        function: KnolusFunction<FT>,
+        attemptedParentalRegister: KorneaResult<KnolusFunction<FT>>?,
     ): KorneaResult<T>
 
     fun canAskForFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KorneaResult<T>
 
     fun canAskParentForFunction(
-        child: KnolusContext<T>,
-        parent: KnolusContext<T>,
+        child: KnolusContext,
+        parent: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KorneaResult<T>
 
     fun canTryFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
-        function: KnolusFunction<KnolusTypedValue?, T, *>,
+        function: KnolusFunction<KnolusTypedValue?>,
     ): KorneaResult<T>
 
     fun canRunFunction(
-        context: KnolusContext<T>,
-        function: KnolusFunction<KnolusTypedValue?, T, *>,
+        context: KnolusContext,
+        function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KorneaResult<T>
 
     fun canAskForMemberFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         member: KnolusTypedValue,
         functionName: String,
         functionParameters: Array<KnolusUnion.FunctionParameterType>,
     ): KorneaResult<T>
 
-    fun canAskForMemberPropertyGetter(context: KnolusContext<T>, member: KnolusTypedValue, propertyName: String): KorneaResult<T>
+    fun canAskForMemberPropertyGetter(context: KnolusContext, member: KnolusTypedValue, propertyName: String): KorneaResult<T>
     fun canAskForOperatorFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         operator: ExpressionOperator,
         a: KnolusTypedValue,
         b: KnolusTypedValue,
@@ -74,25 +74,25 @@ interface KnolusRestriction<T> {
 
     @AvailableSince(Knolus.VERSION_1_4_0)
     fun canAskForCastingOperatorFunction(
-        context: KnolusContext<T>,
+        context: KnolusContext,
         self: KnolusTypedValue,
         castingTo: KnolusTypedValue.TypeInfo<*>,
     ): KorneaResult<T>
 
     fun createSubroutineRestrictions(
-        currentContext: KnolusContext<T>,
-        function: KnolusFunction<KnolusTypedValue?, T, *>,
+        currentContext: KnolusContext,
+        function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KorneaResult<KnolusRestriction<T>>
 }
 
 @ExperimentalUnsignedTypes
-fun <R> KnolusContext<R>.canAskAsParentForVariable(child: KnolusContext<R>, variableName: String): KorneaResult<R> =
+fun KnolusContext.canAskAsParentForVariable(child: KnolusContext, variableName: String): KorneaResult<Any?> =
     child.restrictions.canAskParentForVariable(child, this, variableName)
 
 @ExperimentalUnsignedTypes
-fun <R> KnolusContext<R>.canAskAsParentForFunction(
-    child: KnolusContext<R>,
+fun KnolusContext.canAskAsParentForFunction(
+    child: KnolusContext,
     functionName: String,
     functionParameters: Array<KnolusUnion.FunctionParameterType>,
-): KorneaResult<R> = child.restrictions.canAskParentForFunction(child, this, functionName, functionParameters)
+): KorneaResult<Any?> = child.restrictions.canAskParentForFunction(child, this, functionName, functionParameters)

@@ -1,6 +1,6 @@
 package dev.brella.knolus.transform
 
-import org.abimon.antlr.knolus.KnolusParser
+import dev.brella.antlr.knolus.KnolusParser
 import dev.brella.knolus.ExpressionOperator
 import dev.brella.knolus.Knolus
 import dev.brella.knolus.KnolusUnion

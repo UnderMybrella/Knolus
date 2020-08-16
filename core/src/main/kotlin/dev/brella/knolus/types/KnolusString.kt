@@ -17,7 +17,7 @@ inline class KnolusString(val string: String) : KnolusTypedValue {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusString>
         get() = TypeInfo
 
-    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+    override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
         when (typeInfo) {
             KnolusString -> typeInfo.asResult(this)
             KnolusDouble -> typeInfo.asResultOrEmpty(string.toDoubleOrNull()?.let(::KnolusDouble))

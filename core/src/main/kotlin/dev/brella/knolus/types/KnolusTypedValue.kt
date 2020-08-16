@@ -18,29 +18,29 @@ interface KnolusTypedValue {
     }
 
     interface UnsureValue<out E : KnolusTypedValue> : KnolusTypedValue {
-        suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean
-        suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<E>
+        suspend fun needsEvaluation(context: KnolusContext): Boolean
+        suspend fun evaluate(context: KnolusContext): KorneaResult<E>
     }
 
     interface RuntimeValue<out E : KnolusTypedValue> : UnsureValue<E> {
-        override suspend fun <T> needsEvaluation(context: KnolusContext<T>): Boolean = true
+        override suspend fun needsEvaluation(context: KnolusContext): Boolean = true
 
-        override suspend fun <T, R : KnolusTypedValue, I : TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> = evaluate(context).flatMap { it.asType(context, typeInfo) }
+        override suspend fun <R : KnolusTypedValue, I : TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> = evaluate(context).flatMap { it.asType(context, typeInfo) }
     }
 
     //Generics work to go from TypeInfo -> TypedValue, not so much the other way around
     val typeInfo: TypeInfo<*>
 
-    suspend fun <T, R : KnolusTypedValue, I : TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> = KorneaResult.empty()
+    suspend fun <R : KnolusTypedValue, I : TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> = KorneaResult.empty()
 }
 
 //suspend fun <S: KnolusTypedValue, T, R: KnolusTypedValue, I: KnolusTypedValue.TypeInfo<R>> S.asTypeAbs(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> = context.invokeCastingOperator(this, typeInfo)
-suspend fun <S : KnolusTypedValue, T, R : KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> S.asType(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+suspend fun <S : KnolusTypedValue, R : KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> S.asType(context: KnolusContext, typeInfo: I): KorneaResult<R> =
     asTypeImpl(context, typeInfo).switchIfEmpty { context.invokeCastingOperator(this, typeInfo) }
 
-suspend fun <T> KnolusTypedValue.asString(context: KnolusContext<T>): KorneaResult<String> = asType(context, KnolusString).map(KnolusString::string)
-suspend fun <T> KnolusTypedValue.asNumber(context: KnolusContext<T>): KorneaResult<Number> = asType(context, KnolusNumericalType).map(KnolusNumericalType::number)
-suspend fun <T> KnolusTypedValue.asBoolean(context: KnolusContext<T>): KorneaResult<Boolean> = asType(context, KnolusBoolean).map(KnolusBoolean::boolean)
+suspend fun KnolusTypedValue.asString(context: KnolusContext): KorneaResult<String> = asType(context, KnolusString).map(KnolusString::string)
+suspend fun KnolusTypedValue.asNumber(context: KnolusContext): KorneaResult<Number> = asType(context, KnolusNumericalType).map(KnolusNumericalType::number)
+suspend fun KnolusTypedValue.asBoolean(context: KnolusContext): KorneaResult<Boolean> = asType(context, KnolusBoolean).map(KnolusBoolean::boolean)
 
 fun KnolusTypedValue.TypeInfo<*>.getMemberPropertyGetterNames(propertyName: String): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberPropertyGetterName(typeName, propertyName) }
 fun KnolusTypedValue.TypeInfo<*>.getMemberFunctionNames(functionName: String): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberFunctionName(typeName, functionName) }
@@ -50,7 +50,7 @@ fun KnolusTypedValue.TypeInfo<*>.getMemberCastingOperatorNames(castingTo: String
 fun <T> KnolusTypedValue.TypeInfo<T>.asResult(instance: Any?): KorneaResult<T> = KorneaResult.success(asInstance(instance))
 fun <T> KnolusTypedValue.TypeInfo<T>.asResultOrEmpty(instance: Any?): KorneaResult<T> = KorneaResult.successOrEmpty(asInstanceSafe(instance))
 
-suspend fun <T, E : KnolusTypedValue> KnolusTypedValue.UnsureValue<E>.evaluateOrSelf(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> = when (this) {
+suspend fun <E : KnolusTypedValue> KnolusTypedValue.UnsureValue<E>.evaluateOrSelf(context: KnolusContext): KorneaResult<KnolusTypedValue> = when (this) {
     is KnolusTypedValue.RuntimeValue -> evaluate(context)
     else -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.successInline(this)
 }

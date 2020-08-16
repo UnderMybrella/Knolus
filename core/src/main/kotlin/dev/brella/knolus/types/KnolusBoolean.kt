@@ -14,7 +14,7 @@ inline class KnolusBoolean(val boolean: Boolean) : KnolusTypedValue {
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusBoolean>
         get() = TypeInfo
 
-    override suspend fun <T, R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext<T>, typeInfo: I): KorneaResult<R> =
+    override suspend fun <R: KnolusTypedValue, I : KnolusTypedValue.TypeInfo<R>> asTypeImpl(context: KnolusContext, typeInfo: I): KorneaResult<R> =
         when (typeInfo) {
             KnolusString -> typeInfo.asResult(KnolusString(boolean.toString()))
             KnolusNumericalType -> typeInfo.asResult(KnolusInt(if (boolean) 1 else 0))

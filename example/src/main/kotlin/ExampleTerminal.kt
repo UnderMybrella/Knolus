@@ -1,6 +1,6 @@
 import kotlinx.coroutines.runBlocking
-import org.abimon.antlr.knolus.ExampleLexer
-import org.abimon.antlr.knolus.ExampleParser
+import dev.brella.antlr.knolus.ExampleLexer
+import dev.brella.antlr.knolus.ExampleParser
 import dev.brella.knolus.*
 import dev.brella.knolus.context.KnolusGlobalContext
 import dev.brella.knolus.modules.KnolusStringModule

@@ -5,76 +5,76 @@ import dev.brella.knolus.context.KnolusContext
 import dev.brella.knolus.types.KnolusTypedValue
 import dev.brella.kornea.errors.common.KorneaResult
 
-fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiFunctionWithContext(
+fun <P> KnolusContext.registerMultiFunctionWithContext(
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: P) -> KnolusTypedValue,
+    parameterSpecs: Array<ParameterSpec<*, P>>,
+    func: suspend (context: KnolusContext, parameter: P) -> KnolusTypedValue,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
-        functionBuilder<R, C>()
+        functionBuilder()
             .setFunctionWithContext(parameterSpec, func)
             .build()
     )
 }
 
-fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiFunctionWithContextWithoutReturn(
+fun <P> KnolusContext.registerMultiFunctionWithContextWithoutReturn(
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: P) -> Unit,
+    parameterSpecs: Array<ParameterSpec<*, P>>,
+    func: suspend (context: KnolusContext, parameter: P) -> Unit,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
-        functionBuilder<R, C>()
+        functionBuilder()
             .setFunctionWithContextWithoutReturn(parameterSpec, func)
             .build()
     )
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiFunctionWithContext(
+fun <P1, P2> KnolusContext.registerMultiFunctionWithContext(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             functionName,
-            functionBuilder<R, C>()
+            functionBuilder()
                 .setFunctionWithContext(firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiFunctionWithContextWithoutReturn(
+fun <P1, P2> KnolusContext.registerMultiFunctionWithContextWithoutReturn(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: P1, secondParameter: P2) -> Unit,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             functionName,
-            functionBuilder<R, C>()
+            functionBuilder()
                 .setFunctionWithContextWithoutReturn(firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiFunctionWithContext(
+fun <P1, P2, P3> KnolusContext.registerMultiFunctionWithContext(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> KnolusTypedValue,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    thirdParameterSpecs: Array<ParameterSpec<*, P3>>,
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->
             register(
                 functionName,
-                functionBuilder<R, C>()
+                functionBuilder()
                     .setFunctionWithContext(firstParameterSpec, secondParameterSpec, thirdParameterSpec, func)
                     .build()
             )
@@ -82,18 +82,18 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiFunct
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiFunctionWithContextWithoutReturn(
+fun <P1, P2, P3> KnolusContext.registerMultiFunctionWithContextWithoutReturn(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    thirdParameterSpecs: Array<ParameterSpec<*, P3>>,
+    func: suspend (context: KnolusContext, firstParameter: P1, secondParameter: P2, thirdParameter: P3) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->
             register(
                 functionName,
-                functionBuilder<R, C>()
+                functionBuilder()
                     .setFunctionWithContextWithoutReturn(firstParameterSpec, secondParameterSpec, thirdParameterSpec, func)
                     .build()
             )
@@ -103,76 +103,76 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiFunct
 
 /** Result */
 
-fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiResultFunctionWithContext(
+fun <P> KnolusContext.registerMultiResultFunctionWithContext(
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: KorneaResult<P>) -> KnolusTypedValue,
+    parameterSpecs: Array<ParameterSpec<*, P>>,
+    func: suspend (context: KnolusContext, parameter: KorneaResult<P>) -> KnolusTypedValue,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
-        functionBuilder<R, C>()
+        functionBuilder()
             .setResultFunctionWithContext(parameterSpec, func)
             .build()
     )
 }
 
-fun <R, C: KnolusContext<out R>, P> KnolusContext<R>.registerMultiResultFunctionWithContextWithoutReturn(
+fun <P> KnolusContext.registerMultiResultFunctionWithContextWithoutReturn(
     functionName: String,
-    parameterSpecs: Array<ParameterSpec<*, P, in R, C>>,
-    func: suspend (context: C, parameter: KorneaResult<P>) -> Unit,
+    parameterSpecs: Array<ParameterSpec<*, P>>,
+    func: suspend (context: KnolusContext, parameter: KorneaResult<P>) -> Unit,
 ) = parameterSpecs.forEach { parameterSpec ->
     register(
         functionName,
-        functionBuilder<R, C>()
+        functionBuilder()
             .setResultFunctionWithContextWithoutReturn(parameterSpec, func)
             .build()
     )
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiResultFunctionWithContext(
+fun <P1, P2> KnolusContext.registerMultiResultFunctionWithContext(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> KnolusTypedValue,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    func: suspend (context: KnolusContext, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             functionName,
-            functionBuilder<R, C>()
+            functionBuilder()
                 .setResultFunctionWithContext(firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2> KnolusContext<R>.registerMultiResultFunctionWithContextWithoutReturn(
+fun <P1, P2> KnolusContext.registerMultiResultFunctionWithContextWithoutReturn(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> Unit,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    func: suspend (context: KnolusContext, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         register(
             functionName,
-            functionBuilder<R, C>()
+            functionBuilder()
                 .setResultFunctionWithContextWithoutReturn(firstParameterSpec, secondParameterSpec, func)
                 .build()
         )
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiResultFunctionWithContext(
+fun <P1, P2, P3> KnolusContext.registerMultiResultFunctionWithContext(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> KnolusTypedValue,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    thirdParameterSpecs: Array<ParameterSpec<*, P3>>,
+    func: suspend (context: KnolusContext, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> KnolusTypedValue,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->
             register(
                 functionName,
-                functionBuilder<R, C>()
+                functionBuilder()
                     .setResultFunctionWithContext(firstParameterSpec, secondParameterSpec, thirdParameterSpec, func)
                     .build()
             )
@@ -180,18 +180,18 @@ fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiResul
     }
 }
 
-fun <R, C: KnolusContext<out R>, P1, P2, P3> KnolusContext<R>.registerMultiResultFunctionWithContextWithoutReturn(
+fun <P1, P2, P3> KnolusContext.registerMultiResultFunctionWithContextWithoutReturn(
     functionName: String,
-    firstParameterSpecs: Array<ParameterSpec<*, P1, in R, C>>,
-    secondParameterSpecs: Array<ParameterSpec<*, P2, in R, C>>,
-    thirdParameterSpecs: Array<ParameterSpec<*, P3, in R, C>>,
-    func: suspend (context: C, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> Unit,
+    firstParameterSpecs: Array<ParameterSpec<*, P1>>,
+    secondParameterSpecs: Array<ParameterSpec<*, P2>>,
+    thirdParameterSpecs: Array<ParameterSpec<*, P3>>,
+    func: suspend (context: KnolusContext, firstParameter: KorneaResult<P1>, secondParameter: KorneaResult<P2>, thirdParameter: KorneaResult<P3>) -> Unit,
 ) = firstParameterSpecs.forEach { firstParameterSpec ->
     secondParameterSpecs.forEach { secondParameterSpec ->
         thirdParameterSpecs.forEach { thirdParameterSpec ->
             register(
                 functionName,
-                functionBuilder<R, C>()
+                functionBuilder()
                     .setResultFunctionWithContextWithoutReturn(firstParameterSpec, secondParameterSpec, thirdParameterSpec, func)
                     .build()
             )

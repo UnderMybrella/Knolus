@@ -20,10 +20,10 @@ data class KnolusLazyFunctionCall(val name: String, val parameters: Array<Knolus
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyFunctionCall>
         get() = TypeInfo
 
-    override suspend fun <T> evaluate(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> =
+    override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusTypedValue> =
         run(context)
 
-    override suspend fun <T> run(context: KnolusContext<T>): KorneaResult<KnolusTypedValue> {
+    override suspend fun run(context: KnolusContext): KorneaResult<KnolusTypedValue> {
         return parameters.fold(KorneaResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, funcParam ->
             acc.flatMap { list ->
                 if (funcParam.parameter is KnolusTypedValue.UnsureValue<*> && funcParam.parameter.needsEvaluation(context))
