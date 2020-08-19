@@ -83,7 +83,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
             .filter(List<KnolusUnion>::isNotEmpty)
             .map { list -> KnolusUnion.ScopeType(list.toTypedArray()) }
             .flatMap { scope ->
-                if (restrictions.shouldTakeScope(ctx, scope) is KorneaResult.Success<*>) KorneaResult.success(scope)
+                if (restrictions.shouldTakeScope(ctx, scope) is KorneaResult.Success<*>) KorneaResult.success(scope, null)
                 else KorneaResult.errorAsIllegalState(SCOPE_RESULT_DENIED, "Restriction denied scope result")
             }
     }
@@ -411,7 +411,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
                     )
                 )
             }.flatMap { func ->
-                if (restrictions.shouldTakeMemberFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.success(func)
+                if (restrictions.shouldTakeMemberFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.success(func, null)
                 else KorneaResult.errorAsIllegalState(
                     MEMBER_FUNCTION_CALL_RESULT_DENIED,
                     "Restriction denied member function call result"

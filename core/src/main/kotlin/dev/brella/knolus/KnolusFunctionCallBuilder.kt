@@ -27,8 +27,8 @@ class KnolusFunctionCallBuilder(val functionName: String) {
     fun build(): KnolusLazyFunctionCall = KnolusLazyFunctionCall(functionName, parameters.toTypedArray())
     fun buildVar(): KnolusUnion.VariableValue<KnolusLazyFunctionCall> = KnolusUnion.VariableValue.Lazy(KnolusLazyFunctionCall(functionName, parameters.toTypedArray()))
 
-    fun buildResult(): KorneaResult<KnolusLazyFunctionCall> = KorneaResult.success(KnolusLazyFunctionCall (functionName, parameters.toTypedArray()))
-    fun buildVarResult(): KorneaResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>> = KorneaResult.success(KnolusUnion.VariableValue.Lazy(KnolusLazyFunctionCall(functionName, parameters.toTypedArray())))
+    fun buildResult(): KorneaResult<KnolusLazyFunctionCall> = KorneaResult.success(KnolusLazyFunctionCall (functionName, parameters.toTypedArray()), null)
+    fun buildVarResult(): KorneaResult<KnolusUnion.VariableValue<KnolusLazyFunctionCall>> = KorneaResult.success(KnolusUnion.VariableValue.Lazy(KnolusLazyFunctionCall(functionName, parameters.toTypedArray())), null)
 }
 
 inline fun buildFunctionCall(name: String, init: KnolusFunctionCallBuilder.() -> KnolusFunctionCallBuilder): KnolusLazyFunctionCall =

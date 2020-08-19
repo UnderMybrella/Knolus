@@ -47,8 +47,8 @@ fun KnolusTypedValue.TypeInfo<*>.getMemberFunctionNames(functionName: String): A
 fun KnolusTypedValue.TypeInfo<*>.getMemberOperatorNames(operator: ExpressionOperator): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberOperatorName(typeName, operator) }
 fun KnolusTypedValue.TypeInfo<*>.getMemberCastingOperatorNames(castingTo: String): Array<String> = typeHierarchicalNames.mapToArray { typeName -> getMemberCastingOperatorName(typeName, castingTo) }
 
-fun <T> KnolusTypedValue.TypeInfo<T>.asResult(instance: Any?): KorneaResult<T> = KorneaResult.success(asInstance(instance))
-fun <T> KnolusTypedValue.TypeInfo<T>.asResultOrEmpty(instance: Any?): KorneaResult<T> = KorneaResult.successOrEmpty(asInstanceSafe(instance))
+fun <T> KnolusTypedValue.TypeInfo<T>.asResult(instance: Any?): KorneaResult<T> = KorneaResult.success(asInstance(instance), null)
+fun <T> KnolusTypedValue.TypeInfo<T>.asResultOrEmpty(instance: Any?): KorneaResult<T> = KorneaResult.successOrEmpty(asInstanceSafe(instance), null)
 
 suspend fun <E : KnolusTypedValue> KnolusTypedValue.UnsureValue<E>.evaluateOrSelf(context: KnolusContext): KorneaResult<KnolusTypedValue> = when (this) {
     is KnolusTypedValue.RuntimeValue -> evaluate(context)

@@ -82,17 +82,17 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
 
         if (ctx.children?.isNotEmpty() != true) return KorneaResult.empty()
 
-        return ctx.children.fold(KorneaResult.foldingMutableListOf<KnolusUnion>()) { acc, child ->
+        return ctx.children.fold(KorneaResult.foldingMutableListOf<KnolusUnion>(null)) { acc, child ->
             acc.flatMap { list ->
                 visit(child)?.map { union ->
                     list.add(union)
                     list
-                } ?: KorneaResult.success(list)
+                } ?: KorneaResult.success(list, null)
             }
         }.filter(List<KnolusUnion>::isNotEmpty).map { list ->
             KnolusUnion.ScopeType(list.toTypedArray())
         }.flatMap { scope ->
-            if (restrictions.shouldTakeScope(ctx, scope) is KorneaResult.Success<*>) KorneaResult.success(scope)
+            if (restrictions.shouldTakeScope(ctx, scope) is KorneaResult.Success<*>) KorneaResult.success(scope, null)
             else KorneaResult.errorAsIllegalState(SCOPE_RESULT_DENIED, "Restriction denied scope result")
         }
     }
@@ -354,7 +354,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
 
         val functionName = ctx.functionName.text.removeSuffix("(")
         return ctx.parameters
-            .fold(KorneaResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>()) { acc, param ->
+            .fold(KorneaResult.foldingMutableListOf<KnolusUnion.FunctionParameterType>(null)) { acc, param ->
                 acc.flatMap { list -> visitFunctionCallParameter(param).map(list::withElement) }
             }.flatMap { params ->
                 KorneaResult.successVar(KnolusLazyFunctionCall(functionName, params.toTypedArray()))
@@ -382,7 +382,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
                     )
                 )
             }.flatMap { func ->
-                if (restrictions.shouldTakeMemberFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.success(func)
+                if (restrictions.shouldTakeMemberFunctionCall(ctx, func) is KorneaResult.Success<*>) KorneaResult.success(func, null)
                 else KorneaResult.errorAsIllegalState(
                     MEMBER_FUNCTION_CALL_RESULT_DENIED,
                     "Restriction denied member function call result"
@@ -522,9 +522,9 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
         if (restrictions.canVisitArrayContents(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(ARRAY_CONTENTS_VISIT_DENIED, "Restriction denied array contents visit")
 
-        val initial: KorneaResult<MutableList<KnolusTypedValue>> = KorneaResult.success(ArrayList())
+        val initial: KorneaResult<MutableList<KnolusTypedValue>> = KorneaResult.success(ArrayList(), null)
 
-        return ctx.children.fold(KorneaResult.foldingMutableListOf<KnolusTypedValue>()) { acc, child ->
+        return ctx.children.fold(KorneaResult.foldingMutableListOf<KnolusTypedValue>(null)) { acc, child ->
             acc.flatMap { list ->
                 visit(child)?.filterToInstance<KnolusUnion.VariableValue<KnolusTypedValue>>()?.map { union ->
                     list.add(union.value)

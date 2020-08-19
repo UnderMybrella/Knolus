@@ -88,5 +88,5 @@ interface KnolusBaseRestriction<T> : KnolusRestriction<T> {
         currentContext: KnolusContext,
         function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>
-    ): KorneaResult<KnolusBaseRestriction<T>> = KorneaResult.success(this)
+    ): KorneaResult<KnolusBaseRestriction<T>> = KorneaResult.success(this, null)
 }

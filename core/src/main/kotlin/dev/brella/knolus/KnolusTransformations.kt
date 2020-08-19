@@ -51,7 +51,7 @@ data class RegularParameterSpec<V : KnolusTypedValue, T>(
 ) : ParameterSpec<V, T>() {
     override fun withName(name: String): ParameterSpec<V, T> = copy(name = name.sanitiseFunctionIdentifier())
     override fun withDefault(value: T?): ParameterSpec<V, T> = copy(default = value)
-    override fun asOptional(): ParameterSpec<V, KorneaResult<T>> = OptionalParameterSpec(name, type, KorneaResult.successOrEmpty(default), transformation)
+    override fun asOptional(): ParameterSpec<V, KorneaResult<T>> = OptionalParameterSpec(name, type, KorneaResult.successOrEmpty(default, null), transformation)
 
     override suspend fun transform(self: V, context: KnolusContext): KorneaResult<T> = transformation(self, context)
 }

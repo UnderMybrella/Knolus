@@ -125,7 +125,7 @@ class CompoundKnolusRestriction<R>(val restrictions: List<KnolusRestriction<R>>,
         function: KnolusFunction<KnolusTypedValue?>,
         parameters: Map<String, KnolusTypedValue>,
     ): KorneaResult<KnolusRestriction<R>> =
-        restrictions.fold(KorneaResult.success(mutableListOf<KnolusRestriction<R>>())) { acc, r ->
+        restrictions.fold(KorneaResult.success(mutableListOf<KnolusRestriction<R>>(), null)) { acc, r ->
             acc.flatMap { list -> r.createSubroutineRestrictions(currentContext, function, parameters).map(list::withElement) }
         }.map { list -> CompoundKnolusRestriction(list, startingValue, emptyResult) }
 }
