@@ -169,7 +169,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         }
     }
 
-    suspend fun <T: KnolusTypedValue> invokeCastingOperator(
+    suspend fun <T : KnolusTypedValue> invokeCastingOperator(
         self: KnolusTypedValue,
         castingTo: KnolusTypedValue.TypeInfo<T>
     ): KorneaResult<T> {
@@ -184,6 +184,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         }
     }
 
+    suspend operator fun String.invoke(vararg parameters: Pair<String, KnolusTypedValue>) = invokeFunction(this, parameters = parameters)
     suspend fun invokeFunction(
         functionName: String,
         vararg parameters: Pair<String, KnolusTypedValue>,
@@ -192,6 +193,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
             KnolusUnion.FunctionParameterType(k, v)
         })
 
+    suspend operator fun String.invoke(vararg parameters: KnolusTypedValue) = invokeFunction(this, parameters = parameters)
     suspend fun invokeFunction(
         functionName: String,
         vararg parameters: KnolusTypedValue,
@@ -199,6 +201,11 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         invokeFunction(functionName, parameters.mapToArray { param ->
             KnolusUnion.FunctionParameterType(null, param)
         })
+
+    suspend operator fun String.invoke(
+        functionParameters: Array<KnolusUnion.FunctionParameterType>,
+        selfContext: KnolusContext = this@KnolusContext
+    ) = invokeFunction(this, functionParameters, selfContext)
 
     suspend fun invokeFunction(
         functionName: String,

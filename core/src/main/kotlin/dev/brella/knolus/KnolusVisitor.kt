@@ -434,7 +434,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
         if (restrictions.canVisitWholeNumber(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(WHOLE_NUMBER_VISIT_DENIED, "Restriction denied whole number visit")
 
-        val int = ctx.INTEGER().text.toIntOrNullBaseN()
+        val int = ctx.INTEGER().text.trim().toIntOrNullBaseN()
                   ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${ctx.INTEGER().text} was not a valid int string")
 
         return KorneaResult.successVar(KnolusInt(int)).flatMap { num ->
@@ -447,7 +447,7 @@ class KnolusVisitor(val restrictions: KnolusVisitorRestrictions<*>, val parser: 
         if (restrictions.canVisitDecimalNumber(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(DECIMAL_NUMBER_VISIT_DENIED, "Restriction denied decimal number visit")
 
-        val double = ctx.DECIMAL_NUMBER().text.toDoubleOrNull()
+        val double = ctx.DECIMAL_NUMBER().text.trim().toDoubleOrNull()
                      ?: return KorneaResult.errorAsIllegalArgument(
                          NUMBER_FORMAT_ERROR,
                          "${ctx.DECIMAL_NUMBER().text} was not a valid double string"

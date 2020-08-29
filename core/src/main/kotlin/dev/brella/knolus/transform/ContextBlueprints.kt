@@ -1,6 +1,8 @@
 package dev.brella.knolus.transform
 
 import dev.brella.knolus.ExpressionOperator
+import dev.brella.knolus.KnolusUnion
+import dev.brella.knolus.types.KnolusTypedValue
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.Token
@@ -446,11 +448,14 @@ inline class TransDecimalNumberBlueprint(override val backing: ParserRuleContext
 }
 
 interface ExpressionBlueprint: KnolusTypeBlueprint {
-    fun getStartingValue(blueprint: ParserBlueprint<ParserRuleContext>): VariableValueBlueprint
+    fun getStartingValue(blueprint: ParserBlueprint<ParserRuleContext>): VariableValueBlueprint?
     fun getOperations(blueprint: ParserBlueprint<ParserRuleContext>): List<ExpressionOperator>
     fun getValues(blueprint: ParserBlueprint<ParserRuleContext>): List<VariableValueBlueprint>
 
     fun getZippedExpression(blueprint: ParserBlueprint<ParserRuleContext>): List<Pair<ExpressionOperator, VariableValueBlueprint>>
+
+    fun getStaticStartingValue(blueprint: ParserBlueprint<ParserRuleContext>): KnolusUnion.VariableValue<KnolusTypedValue> =
+        throw IllegalStateException("Expression blueprint does not define a starting value")
 }
 
 inline class TransExpressionBlueprint(override val backing: ParserRuleContext): TransRuleBlueprint, ExpressionBlueprint {
@@ -459,6 +464,16 @@ inline class TransExpressionBlueprint(override val backing: ParserRuleContext): 
     override fun getValues(blueprint: ParserBlueprint<ParserRuleContext>): List<VariableValueBlueprint> = blueprint.getExpressionValuesFromExpressionContext(backing).map(::TransVariableValueBlueprint)
 
     override fun getZippedExpression(blueprint: ParserBlueprint<ParserRuleContext>): List<Pair<ExpressionOperator, VariableValueBlueprint>> = getOperations(blueprint).zip(getValues(blueprint))
+}
+
+data class TransExpressionWithStartingValueBlueprint(override val backing: ParserRuleContext, val startingValue: KnolusUnion.VariableValue<KnolusTypedValue>): TransRuleBlueprint, ExpressionBlueprint {
+    override fun getStartingValue(blueprint: ParserBlueprint<ParserRuleContext>): VariableValueBlueprint? = null
+    override fun getOperations(blueprint: ParserBlueprint<ParserRuleContext>): List<ExpressionOperator> = blueprint.getExpressionOperationsFromExpressionContext(backing).map(blueprint::contextToOperator)
+    override fun getValues(blueprint: ParserBlueprint<ParserRuleContext>): List<VariableValueBlueprint> = blueprint.getExpressionValuesFromExpressionContext(backing).map(::TransVariableValueBlueprint)
+
+    override fun getZippedExpression(blueprint: ParserBlueprint<ParserRuleContext>): List<Pair<ExpressionOperator, VariableValueBlueprint>> = getOperations(blueprint).zip(getValues(blueprint))
+
+    override fun getStaticStartingValue(blueprint: ParserBlueprint<ParserRuleContext>): KnolusUnion.VariableValue<KnolusTypedValue> = startingValue
 }
 
 

@@ -465,7 +465,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
             return KorneaResult.errorAsIllegalState(WHOLE_NUMBER_VISIT_DENIED, "Restriction denied whole number visit")
 
         val token = ctx.getInteger(blueprint)
-        val int = token.text.toIntOrNullBaseN() ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${token.text} was not a valid int string")
+        val int = token.text.trim().toIntOrNullBaseN() ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${token.text} was not a valid int string")
 
         return KorneaResult.successVar(KnolusInt(int)).flatMapOrSelf { num ->
             restrictions.shouldTakeWholeNumber(ctx, num)
@@ -480,7 +480,7 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
             return KorneaResult.errorAsIllegalState(DECIMAL_NUMBER_VISIT_DENIED, "Restriction denied decimal number visit")
 
         val token = ctx.getDecimalNumber(blueprint)
-        val double = token.text.toDoubleOrNull() ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${token.text} was not a valid double string")
+        val double = token.text.trim().toDoubleOrNull() ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${token.text} was not a valid double string")
 
         return KorneaResult.successVar(KnolusDouble(double)).flatMapOrSelf { num ->
             restrictions.shouldTakeDecimalNumber(ctx, num)
@@ -494,7 +494,8 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         if (restrictions.canVisitExpression(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(EXPRESSION_VISIT_DENIED, "Restriction denied expression visit")
 
-        val starting = visitVariableValue(ctx.getStartingValue(blueprint)).getOrBreak { return it.asType() }
+        val starting = ctx.getStartingValue(blueprint)?.let(this::visitVariableValue)?.getOrBreak { return it.asType() }
+                       ?: ctx.getStaticStartingValue(blueprint)
 
         return ctx.getZippedExpression(blueprint).foldResults { (op, value) -> visitVariableValue(value).map { v -> Pair(op, v.value) } }
             .flatMap { ops -> KorneaResult.successVar(KnolusLazyExpression(starting.value, ops.toTypedArray())) }
