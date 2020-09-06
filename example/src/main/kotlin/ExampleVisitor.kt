@@ -43,7 +43,7 @@ class ExampleVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, val pa
     override fun visitQuotedCharacter(ctx: ExampleParser.QuotedCharacterContext): KorneaResult<KnolusUnion.VariableValue<KnolusChar>> = delegate.visitQuotedCharacter(TransQuotedCharacterBlueprint(ctx))
 
     override fun visitNumber(ctx: ExampleParser.NumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> = delegate.visitNumber(TransNumberBlueprint(ctx))
-    override fun visitWholeNumber(ctx: ExampleParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusInt>> = delegate.visitWholeNumber(TransWholeNumberBlueprint(ctx))
+    override fun visitWholeNumber(ctx: ExampleParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> = delegate.visitWholeNumber(TransWholeNumberBlueprint(ctx))
     override fun visitDecimalNumber(ctx: ExampleParser.DecimalNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusDouble>> = delegate.visitDecimalNumber(TransDecimalNumberBlueprint(ctx))
     override fun visitExpression(ctx: ExampleParser.ExpressionContext): KorneaResult<KnolusUnion.VariableValue<KnolusLazyExpression>> = delegate.visitExpression(TransExpressionBlueprint(ctx))
 
