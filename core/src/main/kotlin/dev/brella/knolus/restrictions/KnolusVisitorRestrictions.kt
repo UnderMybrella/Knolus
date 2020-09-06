@@ -75,7 +75,7 @@ interface KnolusVisitorRestrictions<T> {
 
         override fun canVisitWholeNumber(context: KnolusParser.WholeNumberContext): KorneaResult<T> = defaultValue()
 
-        override fun shouldTakeWholeNumber(context: KnolusParser.WholeNumberContext, int: KnolusUnion.VariableValue<KnolusInt>): KorneaResult<T> = defaultValue()
+        override fun shouldTakeWholeNumber(context: KnolusParser.WholeNumberContext, int: KnolusUnion.VariableValue<KnolusNumericalType>): KorneaResult<T> = defaultValue()
 
         override fun canVisitDecimalNumber(context: KnolusParser.DecimalNumberContext): KorneaResult<T> = defaultValue()
 
@@ -182,7 +182,7 @@ interface KnolusVisitorRestrictions<T> {
     fun canVisitWholeNumber(context: KnolusParser.WholeNumberContext): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeWholeNumber(
         context: KnolusParser.WholeNumberContext,
-        int: KnolusUnion.VariableValue<KnolusInt>,
+        int: KnolusUnion.VariableValue<KnolusNumericalType>,
     ): KorneaResult<T> = KorneaResult.empty()
 
     fun canVisitDecimalNumber(context: KnolusParser.DecimalNumberContext): KorneaResult<T> = KorneaResult.empty()

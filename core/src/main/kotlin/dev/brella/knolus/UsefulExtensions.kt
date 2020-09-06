@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.Parser
 import org.antlr.v4.runtime.misc.Utils
 import org.antlr.v4.runtime.tree.Tree
 import org.antlr.v4.runtime.tree.Trees
+import java.math.BigInteger
 
 fun Double.asReasonablePercentage(): Double =
     if (this >= -0.0001 && this <= 1.0001) this * 100.0 else this.coerceIn(0.0, 100.0)
@@ -26,6 +27,22 @@ public inline fun <T> T.takeIf(predicate: Boolean): T? {
     return if (predicate) this else null
 }
 
+inline fun String.baseN(): Int = when {
+    startsWith("0b") -> 2
+    startsWith("0o") -> 8
+    startsWith("0x") -> 16
+    startsWith("0d") -> 10
+    else -> 10
+}
+
+fun String.stripBase(): Pair<String, Int> = when {
+    startsWith("0b") -> substring(2) to 2
+    startsWith("0o") -> substring(2) to 8
+    startsWith("0x") -> substring(2) to 16
+    startsWith("0d") -> substring(2) to 10
+    else -> this to 10
+}
+
 fun String.toIntBaseN(): Int = when {
     startsWith("0b") -> substring(2).toInt(2)
     startsWith("0o") -> substring(2).toInt(8)
@@ -41,6 +58,45 @@ fun String.toIntOrNullBaseN(): Int? = when {
     startsWith("0d") -> substring(2).toIntOrNull()
     else -> toIntOrNull()
 }
+
+fun String.toLongBaseN(): Long = when {
+    startsWith("0b") -> substring(2).toLong(2)
+    startsWith("0o") -> substring(2).toLong(8)
+    startsWith("0x") -> substring(2).toLong(16)
+    startsWith("0d") -> substring(2).toLong()
+    else -> toLong()
+}
+
+fun String.toLongOrNullBaseN(): Long? = when {
+    startsWith("0b") -> substring(2).toLongOrNull(2)
+    startsWith("0o") -> substring(2).toLongOrNull(8)
+    startsWith("0x") -> substring(2).toLongOrNull(16)
+    startsWith("0d") -> substring(2).toLongOrNull()
+    else -> toLongOrNull()
+}
+
+fun String.toBigIntBaseN(): BigInteger = when {
+    startsWith("0b") -> substring(2).toBigInt(2)
+    startsWith("0o") -> substring(2).toBigInt(8)
+    startsWith("0x") -> substring(2).toBigInt(16)
+    startsWith("0d") -> substring(2).toBigInt()
+    else -> toBigInt()
+}
+
+fun String.toBigIntOrNullBaseN(): BigInteger? = when {
+    startsWith("0b") -> substring(2).toBigIntOrNull(2)
+    startsWith("0o") -> substring(2).toBigIntOrNull(8)
+    startsWith("0x") -> substring(2).toBigIntOrNull(16)
+    startsWith("0d") -> substring(2).toBigIntOrNull()
+    else -> toBigIntOrNull()
+}
+
+inline fun String.toBigInt(): BigInteger = BigInteger(this, 10)
+inline fun String.toBigIntOrNull(): BigInteger? = if (isValidInBase(10)) BigInteger(this, 10) else null
+inline fun String.toBigInt(radix: Int): BigInteger = BigInteger(this, radix)
+inline fun String.toBigIntOrNull(radix: Int): BigInteger? = if (isValidInBase(radix)) BigInteger(this, radix) else null
+
+inline fun String.isValidInBase(radix: Int): Boolean = (if (startsWith('-')) substring(1) else this).minOf { Character.digit(it, radix) } >= 0
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Array<T>.copyWithStripe(count: Int): Array<T> {

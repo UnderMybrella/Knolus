@@ -2,6 +2,7 @@ package dev.brella.knolus.types
 
 import dev.brella.knolus.context.KnolusContext
 import dev.brella.kornea.errors.common.KorneaResult
+import java.math.BigInteger
 
 interface KnolusNumericalType : KnolusTypedValue {
     companion object TypeInfo: KnolusTypedValue.TypeInfo<KnolusNumericalType> {
@@ -34,6 +35,32 @@ inline class KnolusInt(override val number: Int) : KnolusNumericalType {
     }
 
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusInt>
+        get() = TypeInfo
+}
+
+inline class KnolusLong(override val number: Long) : KnolusNumericalType {
+    companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusLong> {
+        override val typeHierarchicalNames: Array<String> = arrayOf("Long", "Number", "Object")
+
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusLong
+        override fun asInstance(instance: Any?): KnolusLong = instance as KnolusLong
+        override fun asInstanceSafe(instance: Any?): KnolusLong? = instance as? KnolusLong
+    }
+
+    override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLong>
+        get() = TypeInfo
+}
+
+inline class KnolusBigInt(override val number: BigInteger): KnolusNumericalType {
+    companion object TypeInfo : KnolusTypedValue.TypeInfo<KnolusBigInt> {
+        override val typeHierarchicalNames: Array<String> = arrayOf("BigInt", "Number", "Object")
+
+        override fun isInstance(instance: Any?): Boolean = instance is KnolusBigInt
+        override fun asInstance(instance: Any?): KnolusBigInt = instance as KnolusBigInt
+        override fun asInstanceSafe(instance: Any?): KnolusBigInt? = instance as? KnolusBigInt
+    }
+
+    override val typeInfo: KnolusTypedValue.TypeInfo<KnolusBigInt>
         get() = TypeInfo
 }
 

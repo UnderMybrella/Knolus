@@ -64,6 +64,8 @@ number: wholeNumber | decimalNumber;
 wholeNumber: INTEGER;
 decimalNumber: DECIMAL_NUMBER;
 
+//byte: SIGNED_BYTE | UNSIGNED_BYTE;
+
 stringValue
     : quotedString
     | quotedCharacter

@@ -80,7 +80,7 @@ interface KnolusTransVisitorRestrictions<T> {
 
         override fun canVisitWholeNumber(context: WholeNumberBlueprint): KorneaResult<T> = defaultValue()
 
-        override fun shouldTakeWholeNumber(context: WholeNumberBlueprint, int: KnolusUnion.VariableValue<KnolusInt>): KorneaResult<T> = defaultValue()
+        override fun shouldTakeWholeNumber(context: WholeNumberBlueprint, int: KnolusUnion.VariableValue<KnolusNumericalType>): KorneaResult<T> = defaultValue()
 
         override fun canVisitDecimalNumber(context: DecimalNumberBlueprint): KorneaResult<T> = defaultValue()
 
@@ -186,7 +186,7 @@ interface KnolusTransVisitorRestrictions<T> {
     fun canVisitWholeNumber(context: WholeNumberBlueprint): KorneaResult<T> = KorneaResult.empty()
     fun shouldTakeWholeNumber(
         context: WholeNumberBlueprint,
-        int: KnolusUnion.VariableValue<KnolusInt>,
+        int: KnolusUnion.VariableValue<KnolusNumericalType>,
     ): KorneaResult<T> = KorneaResult.empty()
 
     fun canVisitDecimalNumber(context: DecimalNumberBlueprint): KorneaResult<T> = KorneaResult.empty()

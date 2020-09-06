@@ -327,14 +327,14 @@ interface TransKnolusParserVisitor {
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusInt>> = visitWholeNumber(TransWholeNumberBlueprint(ctx))
+    fun visitWholeNumber(ctx: KnolusParser.WholeNumberContext): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> = visitWholeNumber(TransWholeNumberBlueprint(ctx))
 
     /**
      * Visit a parse tree produced by [KnolusParser.wholeNumber].
      * @param ctx the parse tree
      * @return the visitor result
      */
-    fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusInt>>
+    fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>>
 
     /**
      * Visit a parse tree produced by [KnolusParser.decimalNumber].

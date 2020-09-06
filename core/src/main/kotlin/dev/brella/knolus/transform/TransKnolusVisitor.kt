@@ -460,18 +460,31 @@ class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, va
         }
     }
 
-    override fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusInt>> {
+    override fun visitWholeNumber(ctx: WholeNumberBlueprint): KorneaResult<KnolusUnion.VariableValue<KnolusNumericalType>> {
         if (restrictions.canVisitWholeNumber(ctx) !is KorneaResult.Success<*>)
             return KorneaResult.errorAsIllegalState(WHOLE_NUMBER_VISIT_DENIED, "Restriction denied whole number visit")
 
         val token = ctx.getInteger(blueprint)
-        val int = token.text.trim().toIntOrNullBaseN() ?: return KorneaResult.errorAsIllegalArgument(NUMBER_FORMAT_ERROR, "${token.text} was not a valid int string")
+        val text = token.text.trim()
+        val long = text.toLongOrNullBaseN()
+        if (long == null) {
+            val (numStr, base) = text.stripBase()
+            if (numStr.isValidInBase(base)) {
+                val bigInt = numStr.toBigIntOrNull(base) ?:
+                             return KorneaResult.errorAsIllegalArgument(KnolusVisitor.NUMBER_FORMAT_ERROR, "$text was not a valid numerical string")
 
-        return KorneaResult.successVar(KnolusInt(int)).flatMapOrSelf { num ->
-            restrictions.shouldTakeWholeNumber(ctx, num)
-                .doOnFailure { KorneaResult.WithErrorDetails.asIllegalArgument(WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result", it) }
-                .takeUnless { it is KorneaResult.Success<*> }
-                ?.cast()
+                return KorneaResult.successVar(KnolusBigInt(bigInt)).flatMap { num ->
+                    if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
+                    else KorneaResult.errorAsIllegalArgument(KnolusVisitor.WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
+                }
+            } else {
+                return KorneaResult.errorAsIllegalArgument(KnolusVisitor.NUMBER_FORMAT_ERROR, "$text was not a valid numerical string")
+            }
+        }
+
+        return KorneaResult.successVar(if (long < Int.MAX_VALUE && long > Int.MIN_VALUE) KnolusInt(long.toInt()) else KnolusLong(long)).flatMap { num ->
+            if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
+            else KorneaResult.errorAsIllegalArgument(KnolusVisitor.WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
         }
     }
 
