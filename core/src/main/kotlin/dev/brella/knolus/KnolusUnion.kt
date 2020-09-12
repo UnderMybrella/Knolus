@@ -25,6 +25,8 @@ sealed class KnolusUnion {
         data class Stable<T : KnolusTypedValue>(override val value: T) : VariableValue<T>(value)
     }
 
+    class MultiValue<T: KnolusUnion>(val values: Array<T>): KnolusUnion()
+
     data class ArrayContents(val inner: Array<KnolusTypedValue>) : KnolusUnion() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

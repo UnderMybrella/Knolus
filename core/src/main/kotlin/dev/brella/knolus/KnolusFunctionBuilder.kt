@@ -10,14 +10,21 @@ sealed class KnolusDeclaredFunctionParameter<T : KnolusTypedValue> {
     abstract val missingPolicy: KnolusFunctionParameterMissingPolicy
 
     data class Concrete<T : KnolusTypedValue>(
-        override val name: String, val typeInfo: KnolusTypedValue.TypeInfo<T>,
+        override val name: String,
+        val typeInfo: KnolusTypedValue.TypeInfo<T>,
         override val missingPolicy: KnolusFunctionParameterMissingPolicy,
+        val aliases: Array<out String>
     ) : KnolusDeclaredFunctionParameter<T>() {
+        companion object {
+            operator fun <T : KnolusTypedValue> invoke(name: String, typeInfo: KnolusTypedValue.TypeInfo<T>, missingPolicy: KnolusFunctionParameterMissingPolicy, vararg aliases: String): Concrete<T> =
+                Concrete(name, typeInfo, missingPolicy, aliases)
+        }
+
         override fun matches(param: KnolusUnion.FunctionParameterType): Boolean =
-            param.name == name && typeInfo.isInstance(param.parameter)
+            (param.name == name || param.name in aliases) && typeInfo.isInstance(param.parameter)
 
         override fun fits(param: KnolusUnion.FunctionParameterType): Boolean =
-            (param.name == null || param.name == name) && typeInfo.isInstance(param.parameter)
+            (param.name == null || param.name == name || param.name in aliases) && typeInfo.isInstance(param.parameter)
 
         init {
             if (missingPolicy is KnolusFunctionParameterMissingPolicy.Substitute<*>) require(typeInfo.isInstance(missingPolicy.default))
@@ -28,12 +35,18 @@ sealed class KnolusDeclaredFunctionParameter<T : KnolusTypedValue> {
         override val name: String,
         val typeName: String,
         override val missingPolicy: KnolusFunctionParameterMissingPolicy,
+        val aliases: Array<out String>
     ) : KnolusDeclaredFunctionParameter<KnolusTypedValue>() {
+        companion object {
+            operator fun invoke(name: String, typeName: String, missingPolicy: KnolusFunctionParameterMissingPolicy, vararg aliases: String): Named =
+                Named(name, typeName, missingPolicy, aliases)
+        }
+
         override fun matches(param: KnolusUnion.FunctionParameterType): Boolean =
-            param.name == name && typeName in param.parameter.typeInfo.typeHierarchicalNames
+            (param.name == name || param.name in aliases) && typeName in param.parameter.typeInfo.typeHierarchicalNames
 
         override fun fits(param: KnolusUnion.FunctionParameterType): Boolean =
-            (param.name == null || param.name == name) && typeName in param.parameter.typeInfo.typeHierarchicalNames
+            (param.name == null || param.name == name || param.name in aliases) && typeName in param.parameter.typeInfo.typeHierarchicalNames
 
         init {
             if (missingPolicy is KnolusFunctionParameterMissingPolicy.Substitute<*>) require(typeName in missingPolicy.default.typeInfo.typeHierarchicalNames)
