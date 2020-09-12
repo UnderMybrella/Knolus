@@ -11,8 +11,8 @@ object ThrowingErrorListener : BaseErrorListener() {
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
-        msg: String,
-        e: RecognitionException,
+        msg: String?,
+        e: RecognitionException?,
     ) {
         throw ParseCancellationException("line $line:$charPositionInLine $msg", e)
     }
