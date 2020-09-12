@@ -121,7 +121,8 @@ class KnolusFunctionBuilder<T> {
             spec.name.sanitiseFunctionIdentifier(),
             spec.type,
             missingPolicy ?: if (spec.default == null) KnolusFunctionParameterMissingPolicy.Mandatory
-            else KnolusFunctionParameterMissingPolicy.Optional
+            else KnolusFunctionParameterMissingPolicy.Optional,
+            spec.aliases
         ))
 
         return this
