@@ -587,6 +587,20 @@ fun <L: Lexer, P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolus
     parserInit: (TokenStream?) -> P,
     visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: TransKnolusParserVisitor) -> V,
     visit: (parser: P, visitor: V) -> KorneaResult<R>
+): KorneaResult<KnolusParserResult<R, L, CommonTokenStream, P, V>> =
+    parseKnolusTransRule(text, restrictions, lexerInit, parserInit, ::TransKnolusVisitor, visitorInit, visit)
+
+@Suppress("UnnecessaryVariable")
+@ExperimentalUnsignedTypes
+//Restrictions here on nullability are relaxed due to Java/Kotlin interop
+fun <L: Lexer, P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>, D: TransKnolusParserVisitor> parseKnolusTransRule(
+    text: String,
+    restrictions: KnolusTransVisitorRestrictions<*>,
+    lexerInit: (CharStream?) -> L,
+    parserInit: (TokenStream?) -> P,
+    delegateInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, ParserBlueprint<ParserRuleContext>) -> D,
+    visitorInit: (restrictions: KnolusTransVisitorRestrictions<*>, parser: P, delegate: D) -> V,
+    visit: (parser: P, visitor: V) -> KorneaResult<R>
 ): KorneaResult<KnolusParserResult<R, L, CommonTokenStream, P, V>> {
     try {
         val charStream = CharStreams.fromString(text)
@@ -601,7 +615,7 @@ fun <L: Lexer, P : Parser, R, V : ParseTreeVisitor<KorneaResult<R>>> parseKnolus
 
         val blueprint = ReflectiveParserBlueprint(parser)
 
-        val delegate = TransKnolusVisitor(restrictions, parser, blueprint)
+        val delegate = delegateInit(restrictions, parser, blueprint)
         val visitor = visitorInit(restrictions, parser, delegate)
 
         return visit(parser, visitor).map { union -> KnolusParserResult(union, lexer, tokens, parser, visitor) }
