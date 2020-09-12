@@ -597,7 +597,7 @@ sealed class ScopeResult {
 }
 
 @ExperimentalUnsignedTypes
-suspend fun <R> KnolusUnion.ScopeType.run(
+suspend fun KnolusUnion.ScopeType.run(
     parentContext: KnolusContext,
     parameters: Map<String, Any?> = emptyMap(),
     init: KnolusContext.() -> Unit = {},

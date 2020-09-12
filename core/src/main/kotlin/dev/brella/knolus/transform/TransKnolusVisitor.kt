@@ -14,7 +14,7 @@ import dev.brella.kornea.toolkit.common.switchIfNull
 /**
  * A version of [KnolusVisitor] that's capable of handling arbitrary parser input
  */
-class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, val parser: Recognizer<*, *>, val blueprint: ParserBlueprint<ParserRuleContext>) : TransKnolusParserVisitor {
+open class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*>, val parser: Recognizer<*, *>, val blueprint: ParserBlueprint<ParserRuleContext>) : TransKnolusParserVisitor {
     companion object {
         const val NO_VALID_VARIABLE_VALUE = 0x1200
         const val NO_VALID_NUMBER_TYPE = 0x1201
