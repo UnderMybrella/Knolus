@@ -8,13 +8,13 @@ plugins {
 apply plugin: 'maven-publish'
 
 group 'dev.brella'
-version '1.2.0'
+version '1.2.1'
 
 sourceCompatibility = 8
 
 repositories {
     maven { url 'https://kotlin.bintray.com/kotlinx' }
-    maven { url "https://maven.brella.org" }
+    maven { url "https://maven.brella.dev" }
     mavenCentral()
 }
 
