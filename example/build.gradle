@@ -14,7 +14,7 @@ sourceCompatibility = 8
 
 repositories {
     maven { url 'https://kotlin.bintray.com/kotlinx' }
-    maven { url "https://maven.abimon.org" }
+    maven { url "https://maven.brella.org" }
     mavenCentral()
 }
 
