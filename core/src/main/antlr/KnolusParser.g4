@@ -7,7 +7,10 @@ line: declareVariable | declareFunction | setVariableValue | functionCall | memb
 declareVariable: GLOBAL? VARIABLE_DECLARATION (variableName=IDENTIFIER) (SET_VARIABLE variableValue)?;
 setVariableValue: GLOBAL? (variableName=IDENTIFIER) SET_VARIABLE variableValue;
 
-declareFunction: GLOBAL? DECLARE_FUNCTION (functionName=IDENTIFIER) START_FUNCTION_DECLARATION ((parameters+=IDENTIFIER (FN_DECL_PARAM_SEPARATOR parameters+=IDENTIFIER)*?))? END_FUNCTION_DECLARATION (END_DECL_WITH_STUB | declareFunctionBody);
+declareFunction: GLOBAL? DECLARE_FUNCTION (FN_DECL_OPEN_DEFINE_GENERICS ((generics+=declareFunctionGenericParameter (FN_DECL_PARAM_SEPARATOR generics+=declareFunctionGenericParameter)*?)) FN_DECL_CLOSE_DEFINE_GENERICS)? (functionName=IDENTIFIER) START_FUNCTION_DECLARATION ((parameters+=declareFunctionParameter (FN_DECL_PARAM_SEPARATOR parameters+=declareFunctionParameter)*?))? END_FUNCTION_DECLARATION (END_DECL_WITH_STUB | declareFunctionBody);
+declareFunctionGenericParameter: (genericTypeName=IDENTIFIER) FN_DECL_PARAM_TYPE knolusType;
+declareFunctionParameter: (parameterName=IDENTIFIER) (FN_DECL_PARAM_TYPE knolusType)?;
+
 declareFunctionBody: END_DECL_WITH_BODY scope (SEMICOLON_SEPARATOR | NL_SEPARATOR+)? END_SCOPE;
 
 functionCall: (functionName=BEGIN_FUNCTION_CALL) (parameters+=functionCallParameter)? (FUNC_CALL_SEPARATOR (parameters+=functionCallParameter))* END_FUNCTION_CALL;
@@ -16,6 +19,22 @@ memberFunctionCall: (memberName=BEGIN_MEMBER_REFERENCE) functionCall;
 
 variableReference: (variableName=IDENTIFIER);
 memberVariableReference: (memberName=BEGIN_MEMBER_REFERENCE) variableReference;
+
+knolusType
+    : OPEN_COMPLEX_TYPE complexKnolusType END_TYPE
+    | simpleType
+    ;
+
+complexKnolusType
+    : OPEN_COMPLEX_TYPE complexKnolusType END_NEST
+    | complexKnolusType TYPE_AND complexKnolusType
+    | complexKnolusType TYPE_XOR complexKnolusType
+    | complexKnolusType TYPE_OR complexKnolusType
+    | TYPE_NEGATE complexKnolusType
+    | simpleType
+    ;
+
+simpleType: IDENTIFIER;
 
 variableValue
     : array
