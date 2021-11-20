@@ -19,7 +19,7 @@ inline class KnolusLazyString(val components: Array<KnolusUnion.StringComponent>
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusLazyString>
         get() = TypeInfo
 
-    @ExperimentalUnsignedTypes
+    @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusString> =
         evaluateLazyString(components, context)
 }

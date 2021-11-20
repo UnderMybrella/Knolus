@@ -24,8 +24,8 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
         suspend fun <T> KnolusArray<*>.evaluateOrSelf(context: KnolusContext): KorneaResult<KnolusArray<*>> =
             when (this) {
                 is RuntimeArray<*> -> evaluate(context)
-                is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.successInline(this)
-                else -> KorneaResult.successInline(this)
+                is UnsureArray<*> -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.success(this)
+                else -> KorneaResult.success(this)
             }
 
         override fun isInstance(instance: Any?): Boolean = instance is KnolusArray<*>
@@ -75,7 +75,7 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
                     } else {
                         evalArray[i] = element
 
-                        KorneaResult.successInline(evalArray)
+                        KorneaResult.success(evalArray)
                     }
                 }
             }.map { evalArray -> of(evalArray.requireNoNulls()) }
@@ -118,7 +118,7 @@ sealed class KnolusArray<T : KnolusTypedValue>(open val array: Array<T>) : Knolu
                     } else {
                         evalArray[i] = element
 
-                        KorneaResult.successInline(evalArray)
+                        KorneaResult.success(evalArray)
                     }
                 }
             }.map { evalArray -> of(evalArray.requireNoNulls()) }

@@ -19,9 +19,8 @@ repositories {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.1"
-    antlr "org.antlr:antlr4:4.7.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
+    antlr 'org.antlr:antlr4:4.9.3'
 
     implementation project(":knolus-core")
 

@@ -16,7 +16,7 @@ data class KnolusPropertyReference(val variableName: String, val propertyName: S
     override val typeInfo: KnolusTypedValue.TypeInfo<KnolusPropertyReference>
         get() = TypeInfo
 
-    @ExperimentalUnsignedTypes
+    @OptIn(ExperimentalUnsignedTypes::class)
     override suspend fun evaluate(context: KnolusContext): KorneaResult<KnolusTypedValue> = context[variableName].flatMap { member ->
         context.invokeMemberPropertyGetter(member, propertyName)
     }

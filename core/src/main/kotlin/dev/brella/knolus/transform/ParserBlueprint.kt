@@ -115,7 +115,6 @@ class ReflectiveParserBlueprint<R : ParserRuleContext, P : Parser> private const
     override val expressionContext: Class<out R> by lazy { contextClasses.getValue("ExpressionContext") }
     override val expressionOperationContext: Class<out R> by lazy { contextClasses.getValue("ExpressionOperationContext") }
 
-    @ExperimentalStdlibApi
     override val tokenTypeToRaw: Map<KnolusTokenBlueprint.TokenType, Int> by lazy {
         val values = KnolusTokenBlueprint.TokenType.values()
         val fields = parserClass.declaredFields
@@ -131,7 +130,6 @@ class ReflectiveParserBlueprint<R : ParserRuleContext, P : Parser> private const
         }
     }
 
-    @ExperimentalStdlibApi
     override val rawToTokenType: Map<Int, KnolusTokenBlueprint.TokenType> by lazy { tokenTypeToRaw.entries.associate { (k, v) -> Pair(v, k) } }
 
     private val variableNameFieldInDeclareVariableContext: TField<R, Token> by field(this::declareVariableContext, "variableName")

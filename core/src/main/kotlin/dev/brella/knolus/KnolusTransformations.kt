@@ -7,7 +7,6 @@ import dev.brella.knolus.types.*
 import dev.brella.kornea.errors.common.KorneaResult
 import dev.brella.kornea.errors.common.flatMap
 import dev.brella.kornea.errors.common.map
-import dev.brella.kornea.errors.common.successInline
 import kotlin.math.floor
 import kotlin.math.log
 import kotlin.math.roundToInt
@@ -89,7 +88,7 @@ data class TypeParameterSpec<V : KnolusTypedValue, T>(
 
 @ExperimentalUnsignedTypes
 object KnolusTransformations {
-    val NONE: KnolusTransform<KnolusTypedValue, KnolusTypedValue> = { KorneaResult.successInline(this) }
+    val NONE: KnolusTransform<KnolusTypedValue, KnolusTypedValue> = { KorneaResult.success(this, null) }
     val TO_STRING: KnolusTransform<KnolusTypedValue, String> = KnolusTypedValue::asString
     val TO_BOOLEAN: KnolusTransform<KnolusTypedValue, Boolean> = KnolusTypedValue::asBoolean
     val TO_NUMBER: KnolusTransform<KnolusTypedValue, Number> = KnolusTypedValue::asNumber
@@ -171,7 +170,7 @@ object KnolusTransformations {
 //    }
 
 
-    val LAZY_STRING_SELF: KnolusTransform<KnolusLazyString, KnolusLazyString> = { KorneaResult.successInline(this) }
+    val LAZY_STRING_SELF: KnolusTransform<KnolusLazyString, KnolusLazyString> = { KorneaResult.success(this) }
     val LAZY_STRING_TO_INNER: KnolusTransform<KnolusLazyString, Array<KnolusUnion.StringComponent>> = { KorneaResult.success(components) }
     val LAZY_STRING_AS_STRING_ARRAY: KnolusTransform<KnolusLazyString, Array<String>> = { context ->
         val initial: KorneaResult<MutableList<String>> = KorneaResult.success(ArrayList())
@@ -190,7 +189,7 @@ object KnolusTransformations {
         }.flatMap { list -> KorneaResult.success(list.toTypedArray()) }
     }
 
-    val VARIABLE_REFERENCE_SELF: KnolusTransform<KnolusVariableReference, KnolusVariableReference> = { KorneaResult.successInline(this) }
+    val VARIABLE_REFERENCE_SELF: KnolusTransform<KnolusVariableReference, KnolusVariableReference> = { KorneaResult.success(this) }
     val VARIABLE_REFERENCE_TO_INNER: KnolusTransform<KnolusVariableReference, String> = { KorneaResult.success(variableName) }
 
     val MAX_HEX_STRING = String(CharArray((floor(log(Int.MAX_VALUE.toDouble(), 16.0)).toInt() shl 1) + 2) { '0' })

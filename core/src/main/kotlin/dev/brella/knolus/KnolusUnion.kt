@@ -116,7 +116,7 @@ sealed class KnolusUnion {
 
                 val result = context.set(variableName, global, evaluated)
                 if (result is KorneaResult.Success<*>)
-                    return KorneaResult.successInline(evaluated)
+                    return KorneaResult.success(evaluated)
 
                 return KorneaResult.errorAsIllegalState(
                     KnolusContext.FAILED_TO_SET_VARIABLE,
@@ -126,7 +126,7 @@ sealed class KnolusUnion {
             } else {
                 val result = context.set(variableName, global, initialVariableValue)
                 if (result is KorneaResult.Success<*>)
-                    return KorneaResult.successInline(initialVariableValue)
+                    return KorneaResult.success(initialVariableValue)
 
                 return KorneaResult.errorAsIllegalState(
                     KnolusContext.FAILED_TO_SET_VARIABLE,
@@ -156,7 +156,7 @@ sealed class KnolusUnion {
 
                         val result = context.set(variableName, global, evaluated)
                         if (result is KorneaResult.Success)
-                            return@flatMap KorneaResult.successInline(evaluated)
+                            return@flatMap KorneaResult.success(evaluated)
 
                         return@flatMap KorneaResult.errorAsIllegalState(
                             KnolusContext.FAILED_TO_SET_VARIABLE,

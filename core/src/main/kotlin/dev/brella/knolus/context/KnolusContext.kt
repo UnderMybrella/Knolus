@@ -43,7 +43,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
             if (value == null) {
                 parent?.canAskAsParentForVariable(this, key)?.flatMap { parent[key] } ?: KorneaResult.empty()
             } else {
-                KorneaResult.successInline(value)
+                KorneaResult.success(value, null)
             }
         }
 
@@ -57,7 +57,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
         }
 
         return restrictions.canSetVariable(this, key, value, parentResult)
-            .flatMap { KorneaResult.successInline(variableRegistry.put(key, value)) }
+            .flatMap { KorneaResult.success(variableRegistry.put(key, value), null) }
             .switchIfHasCause { result ->
                 KorneaResult.errorAsIllegalArgument(
                     FAILED_TO_SET_VARIABLE,
@@ -293,7 +293,7 @@ abstract class KnolusContext(val parent: KnolusContext?, val restrictions: Knolu
 
         return restrictions.createSubroutineRestrictions(this, function, parameters)
             .flatMap { subroutineRestrictions ->
-                KorneaResult.successInline(
+                KorneaResult.success(
                     function.suspendInvoke(KnolusFunctionContext(function, this, subroutineRestrictions), parameters)
                     ?: KnolusConstants.Null
                 )

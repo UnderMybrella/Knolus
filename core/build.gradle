@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'maven-publish'
 
 group 'dev.brella'
-version '2.6.5'
+version '2.7.0'
 
 sourceCompatibility = 8
 
@@ -18,31 +18,30 @@ repositories {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    antlr "org.antlr:antlr4:4.7.2"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.1"
+    antlr 'org.antlr:antlr4:4.9.3'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
 
-    implementation "dev.brella:kornea-annotations:1.0.5-alpha"
-    api "dev.brella:kornea-errors:2.0.3-alpha"
-    api "dev.brella:kornea-toolkit:3.1.7-alpha"
+    implementation "dev.brella:kornea-annotations:1.1.0-alpha"
+    api "dev.brella:kornea-errors:2.2.4-alpha"
+    api "dev.brella:kornea-toolkit:3.4.2-alpha"
 
 //    implementation "dev.brella:kornea-errors:2.0.2"
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    baseName = jar.baseName
-    appendix = jar.appendix
-    version = jar.version
+    archiveClassifier.set('sources')
+    archiveBaseName.set(jar.archiveBaseName)
+    archiveAppendix.set(jar.archiveAppendix)
+    archiveVersion.set(jar.archiveVersion)
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    baseName = jar.baseName
-    appendix = jar.appendix
-    version = jar.version
+    archiveClassifier.set('javadoc')
+    archiveBaseName.set(jar.archiveBaseName)
+    archiveAppendix.set(jar.archiveAppendix)
+    archiveVersion.set(jar.archiveVersion)
     from javadoc.destinationDir
 }
 

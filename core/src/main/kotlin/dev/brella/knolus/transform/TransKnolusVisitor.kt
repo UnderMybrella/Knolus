@@ -369,7 +369,7 @@ open class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*
                 ctx.getVariableNameToken(blueprint).text
             )
         ).flatMap { ref ->
-            if (restrictions.shouldTakeMemberVariableReference(ctx, ref) is KorneaResult.Success<*>) KorneaResult.successInline(ref)
+            if (restrictions.shouldTakeMemberVariableReference(ctx, ref) is KorneaResult.Success<*>) KorneaResult.success(ref, null)
             else KorneaResult.errorAsIllegalState(
                 MEMBER_VARIABLE_REF_RESULT_DENIED,
                 "Restriction denied member variable reference result"
@@ -428,14 +428,14 @@ open class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*
 
         return visitVariableValue(ctx.getParameterValue(blueprint))
             .flatMap { value ->
-                KorneaResult.successInline(
+                KorneaResult.success(
                     KnolusUnion.FunctionParameterType(
                         ctx.getParameterNameToken(blueprint)?.text?.removeSuffix("="),
                         value.value
-                    )
+                    ), null
                 )
             }.flatMap { param ->
-                if (restrictions.shouldTakeFunctionCallParameter(ctx, param) is KorneaResult.Success<*>) KorneaResult.successInline(param)
+                if (restrictions.shouldTakeFunctionCallParameter(ctx, param) is KorneaResult.Success<*>) KorneaResult.success(param, null)
                 else KorneaResult.errorAsIllegalState(
                     FUNCTION_CALL_PARAM_RESULT_DENIED,
                     "Restriction denied function call parameter result"
@@ -474,7 +474,7 @@ open class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*
                              return KorneaResult.errorAsIllegalArgument(KnolusVisitor.NUMBER_FORMAT_ERROR, "$text was not a valid numerical string")
 
                 return KorneaResult.successVar(KnolusBigInt(bigInt)).flatMap { num ->
-                    if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
+                    if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.success(num, null)
                     else KorneaResult.errorAsIllegalArgument(KnolusVisitor.WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
                 }
             } else {
@@ -483,7 +483,7 @@ open class TransKnolusVisitor(val restrictions: KnolusTransVisitorRestrictions<*
         }
 
         return KorneaResult.successVar(if (long < Int.MAX_VALUE && long > Int.MIN_VALUE) KnolusInt(long.toInt()) else KnolusLong(long)).flatMap { num ->
-            if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.successInline(num)
+            if (restrictions.shouldTakeWholeNumber(ctx, num) is KorneaResult.Success<*>) KorneaResult.success(num, null)
             else KorneaResult.errorAsIllegalArgument(KnolusVisitor.WHOLE_NUMBER_RESULT_DENIED, "Restriction denied whole number result")
         }
     }

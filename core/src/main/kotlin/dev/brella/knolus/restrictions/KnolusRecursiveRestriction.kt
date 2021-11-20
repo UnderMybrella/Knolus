@@ -17,7 +17,7 @@ data class KnolusRecursiveRestriction<T>(val maxDepth: Int = 0xFF, val maxRecurs
     inline fun <T> hiddenMaxDepthReached() = KorneaResult.errorAsIllegalState<T>(MAX_DEPTH_REACHED, "Max depth reached")
     inline fun <T> hiddenMaxRecursionReached() = KorneaResult.errorAsIllegalState<T>(MAX_RECURSION_REACHED, "Max recursion reached")
 
-    @ExperimentalUnsignedTypes
+    @OptIn(ExperimentalUnsignedTypes::class)
     override fun canRunFunction(
         context: KnolusContext,
         function: KnolusFunction<KnolusTypedValue?>,

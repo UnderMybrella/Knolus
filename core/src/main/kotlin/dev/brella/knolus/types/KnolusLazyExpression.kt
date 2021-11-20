@@ -101,6 +101,6 @@ data class KnolusLazyExpression(
 
         //Ternary / Elvis
 
-        return KorneaResult.successInline(value)
+        return KorneaResult.success(value)
     }
 }

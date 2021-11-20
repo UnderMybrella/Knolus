@@ -52,5 +52,5 @@ fun <T> KnolusTypedValue.TypeInfo<T>.asResultOrEmpty(instance: Any?): KorneaResu
 
 suspend fun <E : KnolusTypedValue> KnolusTypedValue.UnsureValue<E>.evaluateOrSelf(context: KnolusContext): KorneaResult<KnolusTypedValue> = when (this) {
     is KnolusTypedValue.RuntimeValue -> evaluate(context)
-    else -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.successInline(this)
+    else -> if (needsEvaluation(context)) evaluate(context) else KorneaResult.success(this)
 }
